@@ -17,6 +17,8 @@
 
 请求失败使用明确 error_kind：timeout / dns / tls / blocked / loop / budget / unavailable。成功返回 200 也需判断是否对应页面/资源。保留路径和 query，不擅自删掉参数。跨域跳转记录后停止，除非该 host 在 scope 中。HTTP 状态为 crawl 证据时记录其时间，不冒充 live 检测。
 
+9.3 的 source URL 保留原路径/query 用于生成测试地址，最终 URL 允许合法路径变化；不能用 final URL 字符串不相等直接判错。归档 content_match（true/false/unknown）及简短依据，例如对应产品标识、服务名称、title/H1/主体内容。证据不足时 unknown → Needs Review。non-www 最终跳到有效且内容对应的 www 页面就是 Pass；跳转状态码或次数本身不产生问题行。HTTPS 和其他 canonical/link 信号不作为此 hostname 检查的额外门槛。
+
 ## 存档
 
 每次运行使用独立目录，不能放进安装的全局 skill 文件夹。路径来自本地配置或参数，建议：

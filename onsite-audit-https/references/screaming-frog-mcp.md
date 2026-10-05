@@ -26,6 +26,8 @@
 | 9.3 | HTML 页面 URL/状态、canonical、相关内部链接与 sitemap URL | 先重用已有 export；只取所需字段，避免全站 HTML 内容 |
 | 细节补查 | 单个 URL 的 info/links | 只补缺失证据，不逐 URL 重拉已导出的资料 |
 
+9.3 hostname 验证以最终 host 和对应内容为准。优先复用页面 title/H1/实体标识，只在无法确定对应内容时获取少量主体片段。路径不同或多次跳转不产生问题行；没有内容证据不能只靠 URL/200 判 Pass。不要为这个检查额外全量拉取 canonical/links/sitemap 并把它们设为通过门槛。
+
 返回证据必须满足 [data-contract.md](data-contract.md)。工具原始返回不一定有 completeness/hash/count；在本地加工后补入 manifest，不能要求 API 返回其不支持的字段。
 
 ### 导出示例
