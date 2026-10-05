@@ -37,6 +37,7 @@ class ReportTests(unittest.TestCase):
             self.assertEqual(wb.worksheets[1]["A2"].value, data["http"][0]["address"])
             self.assertEqual(wb.worksheets[1]["B2"].data_type, "s")
             self.assertEqual(wb["Overview"]["B4"].value, "Needs Review")
+            self.assertEqual(wb["Overview"]["B2"].value, "X")
             wb.close()
             with self.assertRaises(FileExistsError):
                 build(data, output)
@@ -57,6 +58,18 @@ class ReportTests(unittest.TestCase):
         data["mixed"] = [{"page_address": page, "resource_url": "http://example.com/logo.png", "issue": "mixed", "suggestion": "Update image reference"} for page in ["https://example.com/a", "https://example.com/b"]]
         _, rows = normalize(data)
         self.assertEqual(len(rows["mixed"]), 2)
+
+    def test_tick_is_rendered_without_treating_unknown_as_pass(self):
+        data = fixture()
+        data["overview"][1] = {"check": "9.2", "result": "Pass", "coverage": "Completed mixed check: zero issues"}
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            output = Path(directory) / "audit.xlsx"
+            build(data, output)
+            wb = load_workbook(output)
+            self.assertEqual(wb["Overview"]["B3"].value, "√")
+            self.assertEqual(wb["Overview"]["B4"].value, "Needs Review")
+            self.assertEqual(wb["Overview"]["B2"].value, "X")
+            wb.close()
 
 
 if __name__ == "__main__":

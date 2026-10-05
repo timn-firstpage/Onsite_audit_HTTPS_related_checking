@@ -4,6 +4,8 @@
 
 ## 输出
 
+Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，发现问题显示 **X**；待确认或未检测显示 Needs Review / Not Tested，不冒充通过。发现任何内部 HTTP URL 就 X（即使已转 HTTPS）；Mixed Content 检测完成后零条目 √，有条目 X。空/NaN/NA 若代表缺失资料，不能自动给 √。
+
 文件名固定为 **`{site name}_https_audit_{date}.xlsx`**，日期格式 YYYY-MM-DD，例如 `Example_https_audit_2026-10-05.xlsx`。site name 从本次配置/用户提供的名称读取；缺失时使用不带 www 的站点 hostname。日期按用户时区解析或使用指定 audit_date，不由 Mac/Windows 系统日期擅自决定。同日重复运行使用不同 run 目录，不自动加后缀或覆盖旧报告。
 
 | Sheet | Columns |

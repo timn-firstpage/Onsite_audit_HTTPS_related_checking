@@ -20,7 +20,11 @@ Produce evidence-based HTTPS findings in a compact Excel workbook. Match the use
 
 **9.1 HTTP vs HTTPS:** Use Security > HTTP URLs and HTTP URLs Inlinks. If HTTP returns 200, verify its HTTPS equivalent before recommending a 301/308 and updated references. If it already redirects correctly, recommend updating the references directly. Report temporary redirects, chains, wrong destinations and broken HTTPS separately. An ordinary HTTP hyperlink alone is not mixed content.
 
+The flag is X whenever this filter contains an internal HTTP URL, even if it already redirects correctly to HTTPS. Keep a finding for each such URL and tailor its recommendation to the actual response. Only a completed, complete check with zero HTTP URLs is √.
+
 **9.2 Mixed content:** Use Security > Mixed Content and its bulk export. Preserve the HTTPS page and exact HTTP resource pair. Test the HTTPS resource before recommending replacement; a 200 error page is not a valid equivalent. If it fails, suggest repairing, replacing or hosting the resource securely. Disclose missing JavaScript-rendered coverage.
+
+Any confirmed mixed-content entry makes the flag X, regardless of whether its HTTPS alternative works. A completed check with zero entries is √. Empty/NaN/NA means no issue only when it represents a verified zero-result export, not missing data. Missing exports or unresolved evidence remain Needs Review/Not Tested.
 
 **9.3 WWW vs non-WWW:** Verify that the non-preferred hostname redirects to the configured preferred hostname and lands on a working page with corresponding content. For the user's www audit, non-www must redirect to www. Generate test variants preserving source path/query, but judge the final page by content correspondence, not an exact URL/path match. A redirected destination is acceptable; a changed slug or multiple hops alone does not fail this check. Do not require 301/308 or a single hop for this content-based hostname check; retain statuses and hops as evidence only. Do not turn a successful hostname redirect into an issue merely because internal links, canonicals or sitemaps still use another hostname; such signal checks are outside this item's pass criterion.
 
@@ -43,7 +47,7 @@ Create detail sheets only for findings or unresolved checks. Export no passing U
 | 9.2 HTTPS Mixed Content | Page Address; HTTP Resource URL; Issue / Suggestion |
 | 9.3 WWW VS NON-WWW | Test URL; Expected URL; Issue / Suggestion |
 
-Keep an Overview with Check, Result, Findings, Coverage. Results: Pass, Issue, Needs Review, Not Tested. Pass means no findings within the stated tested scope; empty or incomplete inputs are not a pass.
+Keep an Overview with Check, Flag, Findings, Coverage. Internal results remain Pass, Issue, Needs Review, Not Tested; render Pass as √ and Issue as X. Keep Needs Review/Not Tested explicit. Pass means no findings within the stated tested scope; empty or incomplete inputs are not a pass.
 
 Coverage describes tested URL/page counts, full versus sampled scope, and unverified portions only. Keep skill updates, tool installation and runtime setup messages in handover/logs, never in customer-facing Coverage.
 

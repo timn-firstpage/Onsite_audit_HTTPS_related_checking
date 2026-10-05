@@ -68,10 +68,11 @@ def build(data, output):
     wb = Workbook()
     ws = wb.active
     ws.title = "Overview"
-    ws.append(["Check", "Result", "Findings", "Coverage"])
+    ws.append(["Check", "Flag", "Findings", "Coverage"])
     for key, (check, *_rest) in SPECS.items():
         summary = next(r for r in overview if r["check"] == check)
-        ws.append([check, summary["result"], len(rows[key]), summary["coverage"]])
+        flag = {"Pass": "√", "Issue": "X"}.get(summary["result"], summary["result"])
+        ws.append([check, flag, len(rows[key]), summary["coverage"]])
     for key, (_, title, headers, fields) in SPECS.items():
         if not rows[key]:
             continue
@@ -98,7 +99,7 @@ def build(data, output):
         for col in sheet.columns:
             label = col[0].value
             width = 78 if label in {"Issue / Suggestion", "Coverage"} else 52
-            if label in {"Check", "Result", "Findings"}:
+            if label in {"Check", "Flag", "Findings"}:
                 width = 18
             sheet.column_dimensions[col[0].column_letter].width = width
     wb.save(output)
