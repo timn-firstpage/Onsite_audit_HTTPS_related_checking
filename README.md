@@ -21,6 +21,7 @@
 - [客户端配置指南](config/SETUP.md)：跨 agent 安装与 MCP 注册。
 - `scripts/install-skills.ps1`：Windows 全局共享链接，支持传入其他 skill 路径。
 - `scripts/install-skills.sh`：macOS/Linux 共享链接，无需 PowerShell。
+- `scripts/setup-mac.sh`：Mac Python 检查、venv、依赖安装、自检及本机配置。
 - `scripts/make-mcp-config.py`：从本机实际 URL 生成三个客户端配置片段。
 - `onsite-audit-https/scripts/build_report.py`：从已判断的 findings.json 生成并验证 Excel，不联网。
 
@@ -50,12 +51,14 @@ macOS/Linux 使用相同 skill 与配置模板，执行：
 git clone git@github.com:timn-firstpage/Onsite_audit_HTTPS_related_checking.git
 cd Onsite_audit_HTTPS_related_checking
 bash scripts/install-skills.sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python onsite-audit-https/scripts/test_report.py
+bash scripts/setup-mac.sh
 ```
 
 Mac 脚本使用 symlink，不使用 Windows junction。若已 clone，先在 repo 执行 `git pull`。Windows 的 SSH key 不会自动搬到 Mac；该机需自己的 GitHub SSH 授权。不要复制 Windows `.venv`、MCP 本地配置或绝对路径。Mac 端安装自己的 SF 并启用 MCP；Python 报表工具不依赖 CPU 架构专用 Windows 程序。
+
+`setup-mac.sh` 检查 Python 3.9+，没有时使用已安装的 Homebrew 执行 `brew install python`；没有 Homebrew 时提供官方 Python 安装入口，安装后重跑。它不自动安装 Homebrew，不覆盖系统 Python，也不把 Python 包装到全局环境。成功后生成 ignored 的 `config/python.local.json`，并显示需要填入 Multica agent 环境变量 `AUDIT_PYTHON` 的本机路径。
+
+自定义路径通过 `AUDIT_BOOTSTRAP_PYTHON`、`AUDIT_VENV_DIR`、`AUDIT_LOCAL_CONFIG_DIR` 提供；默认位置根据当前 repo 推导，不含机器用户名。Python config 与 SF MCP config 分开，脚本不会替你注册 MCP 或修改 Multica agent 设置。
 
 ## Multica 导入
 

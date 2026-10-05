@@ -25,6 +25,10 @@ python3 -c 'import sys; print(sys.executable)'
 
 在 clone 的仓库根目录执行：
 
+有 repo 时可先运行 `bash scripts/setup-mac.sh` 自动检查解释器、准备 venv、安装依赖并生成本机 `config/python.local.json`。没有 Python 且有 Homebrew 时脚本安装 Python；没有 Homebrew 时先从 Python 官网安装，再重跑。生成的解释器路径需要填入 Multica agent 的 AUDIT_PYTHON 环境设置，不能把配置文件存在磁盘当成已经注册给 agent。
+
+手动等价步骤：
+
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
