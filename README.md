@@ -107,6 +107,8 @@ export SCREAMING_FROG_MCP_URL
 
 ## 运行
 
+www/non-www 的 20 个页面可以直接使用 Screaming Frog List Mode 验证；20 页 × 四版本 = 最多 80 个测试起点。启用 Always Follow Redirects 并导出 All Redirects，再核对最终页内容。[20 页采样操作与 MCP 限制](onsite-audit-https/references/hostname-sampling.md)。
+
 在 repo 内或用户指定的数据目录创建唯一 run；将模板复制到 run/config.json，填写：
 
 - `site.start_url`、`site.preferred_origin`、`site.allowed_hosts`。

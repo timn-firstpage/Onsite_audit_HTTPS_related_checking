@@ -28,6 +28,9 @@ Compare the final page with the intended www counterpart using available title, 
 
 Test all valid HTML pages in a manageable crawl, or representative page types under the configured sample budget. State sample coverage. Timeouts, blocked checks and missing evidence are Needs Review, not confirmed defects. Retry transient failures at most once. Crawl lookups do not prove live responses for URLs absent from the crawl.
 
+
+For 9.3, use around 20 distinct sample pages by default (checks.hostname_page_limit), each with four HTTP/HTTPS and www/non-www variants: up to 80 unique test URLs, not only 20 requests. Prefer Screaming Frog List Mode with Always Follow Redirects and All Redirects export; verify final-page corresponding content as well. Read [20-page hostname sampling](onsite-audit-https/references/hostname-sampling.md) for scope, pass criteria and live MCP limitations. Preserve the full security crawl for 9.1/9.2.
+
 ## Excel
 
 Name the final workbook exactly `{site name}_https_audit_{date}.xlsx`, with date in YYYY-MM-DD. Use site.name from the run config or the user's site label; if missing, use the audited hostname without www and record that choice in the handover. Resolve the audit date in the user's timezone, not the execution machine's default; respect an explicit audit_date. Pass the site name, date and output directory to the report script. Replace filesystem-invalid characters in the name with underscores. Do not use final.xlsx, add version suffixes or change the pattern; an existing same-named file requires a new run directory rather than silent overwrite.
