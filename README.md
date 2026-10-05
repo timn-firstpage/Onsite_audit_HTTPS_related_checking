@@ -57,6 +57,22 @@ python3 -m venv .venv
 
 Mac 脚本使用 symlink，不使用 Windows junction。若已 clone，先在 repo 执行 `git pull`。Windows 的 SSH key 不会自动搬到 Mac；该机需自己的 GitHub SSH 授权。不要复制 Windows `.venv`、MCP 本地配置或绝对路径。Mac 端安装自己的 SF 并启用 MCP；Python 报表工具不依赖 CPU 架构专用 Windows 程序。
 
+## Multica 导入
+
+入口文件名是 **SKILL.md**（单数），位于 `onsite-audit-https/` 子目录，repo 根目录没有入口文件。不要把整个仓库下载 ZIP 当成单个 skill 包。
+
+URL 导入请用：https://github.com/timn-firstpage/Onsite_audit_HTTPS_related_checking/blob/main/onsite-audit-https/SKILL.md
+
+如果 URL 导入提示找不到入口，改用 Skills → New skill → Import from local，上传 [dist/onsite-audit-https.zip](dist/onsite-audit-https.zip)。这个包的根目录直接包含 SKILL.md、references、scripts、配置模板和依赖说明。也可选择本地 clone 的 `onsite-audit-https` 文件夹，不能选它的上层 repo 文件夹。
+
+打包更新（Mac）：
+
+```bash
+.venv/bin/python scripts/package-skill.py --output dist/onsite-audit-https.zip
+```
+
+ZIP 已检查入口和文件完整性，但尚未在你的 Multica 实例内实际导入。导入后确认 supporting files 均存在，并绑定测试 agent。ZIP 导入版本更新需要重新导入，不能自动从 GitHub refresh。官方导入说明：https://multica.ai/docs/skills
+
 ## MCP 配置
 
 只使用官方内置 MCP。需要支持 MCP 的付费版 SEO Spider 和 database mode，在软件里启用 HTTP server。复制软件显示的**真实 URL**；不要默认沿用别的电脑端口。详细命令见 [SETUP.md](config/SETUP.md)。安装 skill 与配置 MCP 是两件事，安装成功不代表 MCP 已连接。
