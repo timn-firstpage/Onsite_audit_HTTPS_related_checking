@@ -1,0 +1,3 @@
+interface:
+  display_name: "Onsite HTTPS Audit"
+  short_description: "Audit HTTPS issues with compact Excel reports"
