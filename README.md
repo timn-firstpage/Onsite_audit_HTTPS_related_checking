@@ -20,12 +20,13 @@
 - [数据与归档要求](onsite-audit-https/references/data-contract.md)：必须包含的证据、完整性、run 文件结构。
 - [客户端配置指南](config/SETUP.md)：跨 agent 安装与 MCP 注册。
 - `scripts/install-skills.ps1`：Windows 全局共享链接，支持传入其他 skill 路径。
+- `scripts/install-skills.sh`：macOS/Linux 共享链接，无需 PowerShell。
 - `scripts/make-mcp-config.py`：从本机实际 URL 生成三个客户端配置片段。
 - `onsite-audit-https/scripts/build_report.py`：从已判断的 findings.json 生成并验证 Excel，不联网。
 
 ## 换电脑安装
 
-先确认该机 SSH GitHub 访问，再 clone：
+先确认该机 SSH GitHub 访问。Windows：
 
 ```powershell
 git clone git@github.com:timn-firstpage/Onsite_audit_HTTPS_related_checking.git
@@ -43,7 +44,18 @@ python -m venv .venv
 .venv/Scripts/python.exe onsite-audit-https/scripts/test_report.py
 ```
 
-macOS/Linux 可使用同样 skill 文件，安装时把目录链接到 `~/.agents/skills/onsite-audit-https` 与 `~/.claude/skills/onsite-audit-https`，Python 使用该系统自己的 venv。Windows 安装脚本不声称支持 Unix。
+macOS/Linux 使用相同 skill 与配置模板，执行：
+
+```bash
+git clone git@github.com:timn-firstpage/Onsite_audit_HTTPS_related_checking.git
+cd Onsite_audit_HTTPS_related_checking
+bash scripts/install-skills.sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python onsite-audit-https/scripts/test_report.py
+```
+
+Mac 脚本使用 symlink，不使用 Windows junction。若已 clone，先在 repo 执行 `git pull`。Windows 的 SSH key 不会自动搬到 Mac；该机需自己的 GitHub SSH 授权。不要复制 Windows `.venv`、MCP 本地配置或绝对路径。Mac 端安装自己的 SF 并启用 MCP；Python 报表工具不依赖 CPU 架构专用 Windows 程序。
 
 ## MCP 配置
 
@@ -54,6 +66,17 @@ macOS/Linux 可使用同样 skill 文件，安装时把目录链接到 `~/.agent
 ```
 
 先在本机设置 `SCREAMING_FROG_MCP_URL`。生成文件是 ignored 的 `.local.*` 片段，按 SETUP 合并到客户端；脚本不会覆盖全局配置。没有 URL 时不要运行/注册。无需安装第三方 MCP server。
+
+Mac 在 SF 启动 HTTP server 后，用以下命令输入其真实 URL 并生成配置：
+
+```bash
+printf 'Paste the MCP URL shown by this Mac\047s Screaming Frog: '
+read -r SCREAMING_FROG_MCP_URL
+export SCREAMING_FROG_MCP_URL
+.venv/bin/python scripts/make-mcp-config.py --url "$SCREAMING_FROG_MCP_URL" --output-dir config/generated
+```
+
+这不会修改客户端全局设置；继续按 SETUP 注册，SF 存档目录使用 Mac 端实际 allowed base。
 
 ## 运行
 
@@ -78,6 +101,8 @@ Agent 将实际工具返回映射为归一化数据、完成检查、写 finding
 
 `<run-directory>` 是说明占位符，调用时换成本机路径。报告生成器拒绝覆盖已有文件，更新既有 workbook 时使用合适的 spreadsheet 编辑工具。此仓库是 skill + 配置/归档约定 + 本地报表工具，**不是独立一键 crawler**；MCP 调用和证据判断由当前 agent 执行。
 
+Mac 的报表命令用 `.venv/bin/python` 替代 `.venv/Scripts/python.exe`；其他参数和输出格式一致。run root 请使用可写的 Mac 目录，不能沿用 Windows 盘符。
+
 ## Token / credits 设计
 
 1. 默认复用 crawl，不自动启动新 crawl；同一批导出只拉一次。
@@ -92,6 +117,8 @@ Agent 将实际工具返回映射为归一化数据、完成检查、写 finding
 ## 验证与当前限制
 
 离线测试覆盖 URL/query 保留、去重、共享资源关联、缺资料拒绝、false Pass 拒绝、公式注入防护与禁止覆盖。技能 frontmatter 已用 skill-creator validator 验证。
+
+目前实际报表测试在 Windows 完成；Mac 安装脚本经过 Bash 语法检查，真实 macOS 安装、客户端发现和 SF MCP 连通性仍需在测试机确认。
 
 **待本机确认 / remarks：** MCP licence、版本、数据库模式、server URL、allowed base、live tools schema、filter/category/field 名称、实际 crawl ID、动态渲染覆盖。尚未完成真实 Screaming Frog MCP → crawl → Excel 端到端测试，不能把示例调用当成 live 验证结果。第一次测试先做 1 个 crawl、少量页面，并在本机保存 tools schema 和 manifest；成功后再扩大范围。
 

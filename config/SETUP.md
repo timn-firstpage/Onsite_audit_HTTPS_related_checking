@@ -12,6 +12,8 @@ powershell -NoProfile -File scripts/install-skills.ps1 -SkillPaths "<existing-sk
 
 目录必须含有效 SKILL.md，文件夹名称符合 skill 命名规则。脚本不会扫描/迁移所有旧 skills，避免重复名字与意外修改；逐个传入选定目录。全局路径自动来自当前用户，不复制上台电脑的绝对路径。
 
+macOS/Linux：`bash scripts/install-skills.sh`。其他 skill 可作为路径参数传入：`bash scripts/install-skills.sh "<existing-skill-directory>"`。脚本从自身位置找到 repo，从 HOME 找到当前用户，使用 symlink；重复运行保持已有正确链接，遇到其他同名文件则停止。不要搬运 Windows junction 或虚拟环境。
+
 Codex 的当前官方用户级路径是 `~/.agents/skills`，有独立 skill 发现机制；不要沿用旧文档中“Codex 没有 skills 目录”的说法。Claude Code 使用 `~/.claude/skills`，Cursor 可发现这两个目录。官方来源见 README。
 
 ## Screaming Frog 配置事实
@@ -29,6 +31,13 @@ codex mcp list
 
 或把生成的 `codex.mcp.local.toml` section 合并到 `~/.codex/config.toml`，保留其他字段。连接后在新会话检查工具目录。需要缩减工具时先取得 live 工具名，再用 enabled_tools；本仓库不提交未确认的 allowlist。
 
+Mac Bash/Zsh：
+
+```bash
+codex mcp add screaming-frog --url "$SCREAMING_FROG_MCP_URL"
+codex mcp list
+```
+
 ### Claude Code
 
 ```powershell
@@ -37,6 +46,13 @@ claude mcp list
 ```
 
 在会话中 `/mcp` 查看连接与实际工具。生成的 Claude JSON 是参考片段；优先用 CLI 写入 user scope，不将它直接覆盖到 ~/.claude.json。Claude Desktop 扩展与 Claude Code 配置是不同客户端。
+
+Mac Bash/Zsh：
+
+```bash
+claude mcp add --transport http --scope user screaming-frog "$SCREAMING_FROG_MCP_URL"
+claude mcp list
+```
 
 ### Cursor
 
