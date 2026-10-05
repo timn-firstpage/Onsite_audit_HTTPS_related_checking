@@ -1,6 +1,8 @@
 """Render normalized HTTPS findings. No network, MCP, or paid API calls."""
 import argparse
 import json
+import re
+from datetime import date
 from pathlib import Path
 
 SPECS = {
@@ -8,6 +10,19 @@ SPECS = {
     "mixed": ("9.2", "9.2 HTTPS Mixed Content", ["Page Address", "HTTP Resource URL", "Issue / Suggestion"], ["page_address", "resource_url", "suggestion"]),
     "hostname": ("9.3", "9.3 WWW VS NON-WWW", ["Test URL", "Expected URL", "Issue / Suggestion"], ["test_url", "expected_url", "suggestion"]),
 }
+
+
+def report_filename(site_name, audit_date):
+    if not isinstance(site_name, str) or not site_name.strip():
+        raise ValueError("site name is required")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", audit_date):
+        raise ValueError("audit date must use YYYY-MM-DD")
+    date.fromisoformat(audit_date)
+    # Preserve readable site names; replace only cross-platform unsafe characters.
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", site_name.strip()).strip(" .")
+    if not name:
+        raise ValueError("site name contains no usable filename characters")
+    return f"{name}_https_audit_{audit_date}.xlsx"
 
 
 def normalize(data):
@@ -107,6 +122,9 @@ def build(data, output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", required=True, type=Path)
-    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--site-name", required=True)
+    parser.add_argument("--date", required=True, help="Audit date YYYY-MM-DD in the user's timezone")
     args = parser.parse_args()
-    print(json.dumps(build(json.loads(args.input.read_text(encoding="utf-8-sig")), args.output), ensure_ascii=False))
+    output = args.output_dir / report_filename(args.site_name, args.date)
+    print(json.dumps(build(json.loads(args.input.read_text(encoding="utf-8-sig")), output), ensure_ascii=False))

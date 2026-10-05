@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from openpyxl import load_workbook
-from build_report import build, normalize
+from build_report import build, normalize, report_filename
 
 
 def fixture():
@@ -16,6 +16,14 @@ def fixture():
 
 
 class ReportTests(unittest.TestCase):
+    def test_report_naming_and_date_validation(self):
+        self.assertEqual(report_filename("Example", "2026-10-05"), "Example_https_audit_2026-10-05.xlsx")
+        self.assertEqual(report_filename("品牌/香港", "2026-10-05"), "品牌_香港_https_audit_2026-10-05.xlsx")
+        with self.assertRaises(ValueError):
+            report_filename("Example", "2026-02-30")
+        with self.assertRaises(ValueError):
+            report_filename("", "2026-10-05")
+
     def test_preserves_urls_and_text_without_empty_sheets(self):
         data = fixture()
         data["http"].append(dict(data["http"][0]))

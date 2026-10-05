@@ -30,6 +30,8 @@ Test all valid HTML pages in a manageable crawl, or representative page types un
 
 ## Excel
 
+Name the final workbook exactly `{site name}_https_audit_{date}.xlsx`, with date in YYYY-MM-DD. Use site.name from the run config or the user's site label; if missing, use the audited hostname without www and record that choice in the handover. Resolve the audit date in the user's timezone, not the execution machine's default; respect an explicit audit_date. Pass the site name, date and output directory to the report script. Replace filesystem-invalid characters in the name with underscores. Do not use final.xlsx, add version suffixes or change the pattern; an existing same-named file requires a new run directory rather than silent overwrite.
+
 Create detail sheets only for findings or unresolved checks. Export no passing URL rows and add no extra columns by default.
 
 | Sheet | Exact columns |
@@ -39,6 +41,8 @@ Create detail sheets only for findings or unresolved checks. Export no passing U
 | 9.3 WWW VS NON-WWW | Test URL; Expected URL; Issue / Suggestion |
 
 Keep an Overview with Check, Result, Findings, Coverage. Results: Pass, Issue, Needs Review, Not Tested. Pass means no findings within the stated tested scope; empty or incomplete inputs are not a pass.
+
+Coverage describes tested URL/page counts, full versus sampled scope, and unverified portions only. Keep skill updates, tool installation and runtime setup messages in handover/logs, never in customer-facing Coverage.
 
 Combine evidence and action in one or two sentences, e.g. `non-www 服务内页跳到了 www 首页，内容不对应；请改为该服务对应的 www 页面。` Put status codes, source references or resource types in this text only when useful. Do not generate generic recommendations for every row.
 

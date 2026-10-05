@@ -31,7 +31,7 @@
   checks.ndjson        locally verified URL responses
   findings.json        concise normalized issues + overview
   usage.json           MCP calls, live requests, retries, paid calls
-  final.xlsx
+  {site name}_https_audit_{YYYY-MM-DD}.xlsx
   handover.md          current state, coverage, next action
 ```
 

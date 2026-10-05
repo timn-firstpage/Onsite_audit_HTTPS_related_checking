@@ -52,5 +52,5 @@ printf '%s\n' "$(pwd)/.venv/bin/python"
 
 - 通过 AUDIT_PYTHON 或已验证的解释器执行 scripts/build_report.py，输入输出路径由 run config 提供。
 - 将运行机类型、解释器版本及依赖自检结果写入 handover/manifest。无需把环境的全部变量输出，避免泄漏凭据。
-- 确认 run 目录可写、输出 final.xlsx 可以取回。导入 skill 的目录用于读取代码，run 数据存单独目录。
+- 确认 run 目录可写、输出 `{site name}_https_audit_{date}.xlsx` 可以取回。通过 --site-name、--date（YYYY-MM-DD）、--output-dir 传入命名信息。导入 skill 的目录用于读取代码，run 数据存单独目录。
 - Python 环境与 SF MCP 是两个独立检查。Python 成功不证明 MCP 成功，MCP 成功也不代表 openpyxl 已安装。

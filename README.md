@@ -4,6 +4,8 @@
 
 ## 输出
 
+文件名固定为 **`{site name}_https_audit_{date}.xlsx`**，日期格式 YYYY-MM-DD，例如 `Example_https_audit_2026-10-05.xlsx`。site name 从本次配置/用户提供的名称读取；缺失时使用不带 www 的站点 hostname。日期按用户时区解析或使用指定 audit_date，不由 Mac/Windows 系统日期擅自决定。同日重复运行使用不同 run 目录，不自动加后缀或覆盖旧报告。
+
 | Sheet | Columns |
 | --- | --- |
 | 9.1 HTTPS VS HTTP | Address · Issue / Suggestion |
@@ -121,7 +123,7 @@ Codex 可显式 `$onsite-audit-https`；Claude Code 和 Cursor 可从 `/` 技能
 Agent 将实际工具返回映射为归一化数据、完成检查、写 findings.json，然后：
 
 ```powershell
-.venv/Scripts/python.exe onsite-audit-https/scripts/build_report.py --input <run-directory>/findings.json --output <run-directory>/final.xlsx
+.venv/Scripts/python.exe onsite-audit-https/scripts/build_report.py --input <run-directory>/findings.json --output-dir <run-directory> --site-name "<site name>" --date <YYYY-MM-DD>
 ```
 
 `<run-directory>` 是说明占位符，调用时换成本机路径。报告生成器拒绝覆盖已有文件，更新既有 workbook 时使用合适的 spreadsheet 编辑工具。此仓库是 skill + 配置/归档约定 + 本地报表工具，**不是独立一键 crawler**；MCP 调用和证据判断由当前 agent 执行。
