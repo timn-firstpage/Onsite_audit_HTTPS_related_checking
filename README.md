@@ -62,9 +62,11 @@ Mac 脚本使用 symlink，不使用 Windows junction。若已 clone，先在 re
 
 ## Multica 导入
 
-入口文件名是 **SKILL.md**（单数），位于 `onsite-audit-https/` 子目录，repo 根目录没有入口文件。不要把整个仓库下载 ZIP 当成单个 skill 包。
+入口文件名是 **SKILL.md**（单数）。仓库根目录现在也提供入口供 Multica repository URL 导入；`onsite-audit-https/` 保留可独立安装的 skill 源文件。不要把整个仓库下载 ZIP 当成单个 skill 包。
 
-URL 导入请用：https://github.com/timn-firstpage/Onsite_audit_HTTPS_related_checking/blob/main/onsite-audit-https/SKILL.md
+URL 导入请用仓库地址：https://github.com/timn-firstpage/Onsite_audit_HTTPS_related_checking
+
+仓库入口：[根目录 SKILL.md](SKILL.md)。它包含完整规则并引用子目录中的 supporting files，不是只有链接的空入口。运行 package-skill.py 时会从独立 skill 同步根目录入口并调整相对引用，避免两份规则分叉。
 
 如果 URL 导入提示找不到入口，改用 Skills → New skill → Import from local，上传 [dist/onsite-audit-https.zip](dist/onsite-audit-https.zip)。这个包的根目录直接包含 SKILL.md、references、scripts、配置模板和依赖说明。也可选择本地 clone 的 `onsite-audit-https` 文件夹，不能选它的上层 repo 文件夹。
 
