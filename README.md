@@ -73,6 +73,10 @@ URL 导入请用：https://github.com/timn-firstpage/Onsite_audit_HTTPS_related_
 
 ZIP 已检查入口和文件完整性，但尚未在你的 Multica 实例内实际导入。导入后确认 supporting files 均存在，并绑定测试 agent。ZIP 导入版本更新需要重新导入，不能自动从 GitHub refresh。官方导入说明：https://multica.ai/docs/skills
 
+**Multica 可以执行包内 Python 脚本，但不会因为导入就拥有 Python 环境。** Agent 必须绑定已安装 Python/openpyxl 的实际执行 runtime；你的测试场景就是那台 Mac。Windows 的 Python 不会随 ZIP 搬过去。
+
+Mac 的安装、自检和 agent 环境变量配置见 [Python runtime 指南](onsite-audit-https/references/runtime-python.md)。先从 Multica agent 的 shell 验证解释器和 openpyxl，再测试 SF MCP。仅在个人 Terminal 运行成功不足以证明 runtime 可用。
+
 ## MCP 配置
 
 只使用官方内置 MCP。需要支持 MCP 的付费版 SEO Spider 和 database mode，在软件里启用 HTTP server。复制软件显示的**真实 URL**；不要默认沿用别的电脑端口。详细命令见 [SETUP.md](config/SETUP.md)。安装 skill 与配置 MCP 是两件事，安装成功不代表 MCP 已连接。

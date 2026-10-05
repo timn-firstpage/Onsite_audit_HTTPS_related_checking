@@ -14,6 +14,7 @@ Produce evidence-based HTTPS findings in a compact Excel workbook. Match the use
 - For MCP retrieval, read [the MCP guide](references/screaming-frog-mcp.md). For existing files, process locally without requiring MCP.
 - Use [the data contract](references/data-contract.md) to normalize evidence and identify missing data. Read only the references needed for the current task; never load a full crawl into chat.
 - For Excel rendering, use the executing machine's Python environment with dependencies from [requirements.txt](requirements.txt). Install into its own virtual environment if needed; no machine-specific interpreter path is required.
+- In Multica, read [runtime-python.md](references/runtime-python.md) before the first run to distinguish imported scripts from the runtime's Python environment. Verify Python and openpyxl from the actual agent shell before requesting crawl data.
 
 ## Checks
 
