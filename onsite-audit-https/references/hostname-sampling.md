@@ -1,10 +1,10 @@
-# WWW / non-WWW：约 20 页的 SF 验证
+# WWW / non-WWW：SF 批量验证与可选采样
 
 ## 数量与范围
 
-checks.hostname_page_limit 默认 20，指 **20 个不同页面**，不是 20 个 HTTP 请求。按页面类型挑选代表样本：包括首页，及存在的分类、产品/服务、文章、语言版本页面；不足 20 页则测全部。记录实际选择清单。
+默认 executor 为 screaming_frog，checks.hostname_page_limit 为 null：检查现有 crawl 中所有符合范围的不同 HTML 页面，不自动截取 20 条。只有显式设置正整数时才采样；例如 20 指 20 个不同页面，不是 20 个 HTTP 请求。采样时按页面类型挑选代表样本，包括首页与存在的分类、产品/服务、文章、语言版本页面。记录选择清单与原 crawl 是否完整。
 
-20 是可调默认值，不是 SF 或代码的固定上限；需要时可提高配置，例如 100 页生成最多 400 个测试起点，并按范围调整检测预算。批量抓取与完整导出后用脚本分析，聊天只接收异常摘要。脚本不能替未抓取的四版本生成实际响应证据。
+没有固定 20 页上限，例如 crawl 有 100 个合适页面就生成最多 400 个测试起点。批量由 SF 抓取、完整导出后用脚本分析，聊天只接收异常摘要。脚本不能替未抓取的四版本生成实际响应证据。max_live_requests 限制 agent/Python 的直接网络请求，不作为 SF 已授权 list crawl 的页面数限制；MCP call 与 poll 预算仍需遵守，超限记录 checkpoint，不缩成 20 页冒充完成。
 
 每个样本生成 HTTP/HTTPS × www/non-www 四个版本，保留源路径/query。20 个页面最多 80 个唯一起点，重定向目标可能增加实际请求数。四个版本一起构成一个页面的验证组。此 sample 只用于 9.3，不能替代 9.1/9.2 的全站 security crawl。
 
@@ -15,6 +15,8 @@ checks.hostname_page_limit 默认 20，指 **20 个不同页面**，不是 20 �
 3. 启用 **Always Follow Redirects**，等待检测完成。
 4. 导出 **All Redirects**，保留每个起点的 Final Address、最终状态和跳转链。
 5. 获取最终页面对应内容的证据；复用现有 title/H1/主体内容标识，不足时只补少量必要片段。SF 的 final 200 本身不能证明内容对应。
+
+checks.allow_hostname_list_crawl 控制本项定向 list crawl，source.allow_new_crawl 则控制一般全站新 crawl。批量大小、速度与 crawl 范围按本机 SF/任务配置执行；不是无限发现新页面。若复用完整 list 结果，则不重新抓同批地址。
 
 官方流程：[Screaming Frog redirects audit](https://www.screamingfrog.co.uk/seo-spider/tutorials/audit-redirects/)。
 

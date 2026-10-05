@@ -109,7 +109,9 @@ export SCREAMING_FROG_MCP_URL
 
 ## 运行
 
-www/non-www 的 20 个页面可以直接使用 Screaming Frog List Mode 验证；20 页 × 四版本 = 最多 80 个测试起点。启用 Always Follow Redirects 并导出 All Redirects，再核对最终页内容。[20 页采样操作与 MCP 限制](onsite-audit-https/references/hostname-sampling.md)。
+www/non-www 默认由 Screaming Frog 检查现有 crawl 中全部符合范围的 HTML 页面，`hostname_page_limit: null` 不设采样页数上限；Python 只准备列表、分析完整导出及生成 Excel。启用 SF List Mode 的 Always Follow Redirects 并导出 All Redirects，再核对最终页内容。只有主动设置 `hostname_page_limit: 20` 才抽样 20 页（最多 80 个测试起点）。[批量检测操作与 MCP 限制](onsite-audit-https/references/hostname-sampling.md)。
+
+旧 run/config.json 中若仍写着 20，需要改成 null；更新 skill 不会覆写旧 run 配置。新模板已默认 null。`allow_hostname_list_crawl` 控制本项的定向 list crawl，不等同于新建一般全站 crawl。
 
 在 repo 内或用户指定的数据目录创建唯一 run；将模板复制到 run/config.json，填写：
 
@@ -138,7 +140,7 @@ Mac 的报表命令用 `.venv/bin/python` 替代 `.venv/Scripts/python.exe`；�
 
 1. 默认复用 crawl，不自动启动新 crawl；同一批导出只拉一次。
 2. 完整资料导出到文件；只把计数、缺失字段和少量实例送进上下文。
-3. 预算在 config 中可调，默认 30 MCP calls、200 live requests；URL 请求、redirect hops 和 retries 都计入预算。到限保存 checkpoint 并标记未完成，不暗中增加用量。
+3. 预算在 config 中可调，默认 30 MCP calls、200 agent/Python 直接 live requests；直接请求的 redirect hops 和 retries 计入该预算。SF 授权的 list crawl 请求由 SF 的 crawl 配置控制，不拿 200 直接请求预算偷偷截断 SF 页面列表。MCP 调用超预算时保存 checkpoint 并标记未完成，不暗中增加用量。
 4. 默认付费第三方 API calls 为 0；这三个检查不需要 Ahrefs、AI prompts 或 embedding。关闭已有 crawl config 中的相关 integration 才能落实此限制。
 5. 表格渲染、去重和复核在本机执行，不发起 LLM API 请求。真实客户端 token/订阅用量仍由客户端计费，不能承诺固定节省百分比。
 6. 多个 agent 共用一个 Spider 时，串行加载/导出；其他 agent 读同一个 run 的归档文件，避免重复 crawl 和上下文。
