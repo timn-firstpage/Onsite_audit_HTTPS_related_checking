@@ -6,7 +6,7 @@
 
 ## 输出
 
-Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，发现问题显示 **X**；待确认或未检测显示 **Human Check**；已有问题同时有证据缺口显示 **X + Human Check**，不冒充通过。证据不足仍输出最终 Excel，在 Issue／Suggestion 写清缺口与人工核查动作。发现任何内部 HTTP URL 就 X（即使已转 HTTPS）；Mixed Content 检测完成后零条目 √，有条目 X。空/NaN/NA 若代表缺失资料，不能自动给 √。
+Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，发现问题显示 **X**；待确认或未检测显示 **Human Check**；已有问题同时有证据缺口显示 **X + Human Check**，不冒充通过。没有致命网络中断时，证据不足仍输出最终 Excel，在 Issue／Suggestion 写清缺口与人工核查动作。发现任何内部 HTTP URL 就 X（即使已转 HTTPS）；Mixed Content 检测完成后零条目 √，有条目 X。空/NaN/NA 若代表缺失资料，不能自动给 √。
 
 文件名固定为 **`{site name}_https_audit_{date}.xlsx`**，日期格式 YYYY-MM-DD，例如 `Example_https_audit_2026-10-05.xlsx`。site name 从本次配置/用户提供的名称读取；缺失时使用不带 www 的站点 hostname。日期按用户时区解析或使用指定 audit_date，不由 Mac/Windows 系统日期擅自决定。同日重复运行使用不同 run 目录，不自动加后缀或覆盖旧报告。
 
@@ -16,7 +16,7 @@ Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，�
 | 9.2 HTTPS Mixed Content | Page Address · HTTP Resource URL · Issue · Suggestion |
 | 9.3 WWW VS NON-WWW | Test URL · Expected URL · Issue · Suggestion |
 
-只输出确认问题或 Human Check 行，不建空明细 sheet。Overview 保留结果、数量和范围。www/non-www 默认用 Python 检查实际首页两个版本，以及主 crawl 中已经出现的内页配对；不预设 www 为首选，不为全部内页生成四版本。两个独立地址提供相同内容且没有统一重定向时，Issue 列出两个 URL 及证据，Suggestion 写选定首选地址后的合并动作。内容不同则说明域名／路由不一致，不冒称重复。证据不足照样交付最终文件并标 Human Check，不能声称两个 URL 已排名或排名被蚕食。HTTP／Mixed Content 仍独立基于主 crawl 检查。
+只输出确认问题或 Human Check 行，不建空明细 sheet。Overview 保留结果、数量和范围。www/non-www 默认用 Python 检查实际首页两个版本，以及主 crawl 中已经出现的内页配对；不预设 www 为首选，不为全部内页生成四版本。两个独立地址提供相同内容且没有统一重定向时，Issue 列出两个 URL 及证据，Suggestion 写选定首选地址后的合并动作。内容不同则说明域名／路由不一致，不冒称重复。没有致命网络中断时，证据不足照样交付最终文件并标 Human Check，不能声称两个 URL 已排名或排名被蚕食。HTTP／Mixed Content 仍独立基于主 crawl 检查。
 
 ## 文件导航
 
@@ -126,7 +126,7 @@ export SCREAMING_FROG_MCP_URL
 1. 从本次实际网站 URL 生成 HTTPS 首页的 www／non-www 地址，不写死任何域名。
 2. 从主 crawl 的 HTML URL 找两侧实际存在的配对：只相差 leading www.，path／query 相同。相同标题不能独立证明配对或内容重复。
 3. 优先复用足够的响应／内容证据，缺少时用包内 [check_hostname_pairs.py](onsite-audit-https/scripts/check_hostname_pairs.py) 逐跳 GET，记录最终地址和有限主体内容。Agent 核对目的与软 404，只有未解决的动态内容才补 SF／浏览器。
-4. 统一到同一可用 HTTPS 对应页 → √；没有统一且主体内容相同 → X，写明两个 URL；内容不同、错误目标或确认循环 → X 并区分原因；超时、429、预算停止、内容不足 → Human Check，照样导出 Excel。
+4. 统一到同一可用 HTTPS 对应页 → √；没有统一且主体内容相同 → X，写明两个 URL；内容不同、错误目标或确认循环 → X 并区分原因；429、预算停止、内容不足 → Human Check，照样导出 Excel；网络中断／超时／DNS/TLS 连接失败 → 立即报错并停止整个审核，要求重跑。
 
 `hostname_executor` 新默认 python；`hostname_page_limit: null` 表示首页 + 全部已观察 pairs，正整数仅限制内页 pairs 并披露遗漏。旧 run 的 screaming_frog／20 不会自动改写，需要按此次任务迁移；不能继续理解为所有页面四版本。直接请求受共享 200 次默认预算限制，含 hops；不够时标 Human Check，不暗中加预算。`allow_hostname_list_crawl` 只控制是否可请求用户运行的 SF 补查，不控制 Python direct checks。[选择、命令与判断边界](onsite-audit-https/references/hostname-sampling.md)。
 
@@ -163,6 +163,8 @@ Mac 的报表命令用 `.venv/bin/python` 替代 `.venv/Scripts/python.exe`；�
 6. 多个 agent 共用一个 Spider 时，串行加载/导出；其他 agent 读同一个 run 的归档文件，避免重复 crawl 和上下文。
 
 这些预算是 skill 的执行约束，当前没有独立 MCP proxy 强制扣减；执行 agent 必须记录 usage.json 并在每次调用前检查预算。不能将配置数字当作服务端硬限额。
+
+网络传输中断采用失败即停止：Python live 检查或 MCP 调用出现连接失败、超时、断连或响应读取中断时，不自动重试／续跑，不交付本次最终 Excel。保存 run-status.json（failed）、错误日志和用量，提示用户检查连接后在新 run 目录重新运行整个 skill。HTTP 403/429、资料缺失及预算上限仍沿用 Human Check；此中断规则优先于一般的缺证据导出和 retry 配置。
 
 ## 验证与当前限制
 

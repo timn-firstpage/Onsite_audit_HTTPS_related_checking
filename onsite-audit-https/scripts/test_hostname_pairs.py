@@ -1,8 +1,14 @@
 """Offline hostname evidence checks; no customer website requests."""
 import io
+import json
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
+from http.client import IncompleteRead
+from urllib.error import URLError
 from email.message import Message
-from check_hostname_pairs import Checker, TextEvidence, build_pairs, compare
+from check_hostname_pairs import Checker, NetworkInterrupted, TextEvidence, build_pairs, compare, main
 
 
 class Reply(io.BytesIO):
@@ -26,6 +32,50 @@ class FakeOpener:
 
 
 class HostnameTests(unittest.TestCase):
+    def test_transport_failures_raise_immediately_without_retry(self):
+        for error in [TimeoutError("timed out"), URLError("DNS failed"),
+                      ConnectionResetError("connection reset"), IncompleteRead(b"partial", 100)]:
+            with self.subTest(error=type(error).__name__):
+                opener = FakeOpener({})
+                with patch.object(opener, 'open', side_effect=error) as request:
+                    usage = {}
+                    checker = Checker(['example.org'], usage, delay=0, opener=opener)
+                    with self.assertRaisesRegex(NetworkInterrupted, 'rerun the entire skill'):
+                        checker.check('https://example.org/')
+                    self.assertEqual(request.call_count, 1)
+                    self.assertEqual(usage['live_requests'], 1)
+
+    def test_interruption_after_completed_pair_marks_failed_and_blocks_report(self):
+        from build_report import build
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            run = Path(directory)
+            config = run / 'config.json'
+            pages = run / 'pages.json'
+            config.write_text(json.dumps({'site': {'start_url': 'https://example.org/'}}), encoding='utf-8')
+            pages.write_text(json.dumps([{'url': u, 'content_type': 'text/html'} for u in
+                                         ['https://example.org/a', 'https://www.example.org/a']]), encoding='utf-8')
+            opener = FakeOpener({})
+            with patch.object(opener, 'open', side_effect=[Reply(), Reply(), IncompleteRead(b'x', 100)]) as request:
+                with patch('check_hostname_pairs.build_opener', return_value=opener), patch('check_hostname_pairs.time.sleep'), patch('sys.argv',
+                         ['check_hostname_pairs.py', '--config', str(config), '--pages', str(pages), '--run-dir', str(run)]):
+                    with self.assertRaises(NetworkInterrupted):
+                        main()
+                    self.assertEqual(request.call_count, 3)
+            status = json.loads((run / 'run-status.json').read_text(encoding='utf-8'))
+            self.assertEqual(status['status'], 'failed')
+            self.assertEqual(status['completed_pairs'], 1)
+            self.assertTrue(status['rerun_required'])
+            self.assertEqual(json.loads((run / 'usage.json').read_text())['live_requests'], 3)
+            self.assertTrue((run / 'error.log').is_file())
+            self.assertFalse((run / 'hostname-observations.json').exists())
+            data = {'overview': [{'check': c, 'result': 'Pass', 'coverage': 'Completed'} for c in ['9.1', '9.2', '9.3']]}
+            with self.assertRaisesRegex(RuntimeError, 'no final Excel'):
+                build(data, run / 'audit.xlsx')
+            self.assertFalse((run / 'audit.xlsx').exists())
+            with patch('sys.argv', ['check_hostname_pairs.py', '--config', str(config), '--pages', str(pages), '--run-dir', str(run)]):
+                with self.assertRaisesRegex(RuntimeError, 'new run directory'):
+                    main()
+
     def test_only_homepage_generated_and_observed_pairs(self):
         rows = [{'url': u, 'content_type': 'text/html'} for u in [
             'https://example.org/service?q=1#x', 'https://www.example.org/service?q=1',

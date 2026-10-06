@@ -73,12 +73,19 @@ def normalize(data):
     return [by_check[r["check"]] for r in overview], rows
 
 
+def reject_failed_run(directory):
+    status = Path(directory) / "run-status.json"
+    if status.exists() and json.loads(status.read_text(encoding="utf-8-sig")).get("status") == "failed":
+        raise RuntimeError("Audit run failed; no final Excel may be generated. Check the network and rerun the entire skill in a new run directory.")
+
+
 def build(data, output):
     from openpyxl import Workbook, load_workbook
     from openpyxl.styles import Alignment, Font, PatternFill
 
     overview, rows = normalize(data)
     output = Path(output)
+    reject_failed_run(output.parent)
     if output.exists():
         raise FileExistsError(f"Refusing to overwrite {output}; select a new path")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -145,5 +152,6 @@ if __name__ == "__main__":
     parser.add_argument("--site-name", required=True)
     parser.add_argument("--date", required=True, help="Audit date YYYY-MM-DD in the user's timezone")
     args = parser.parse_args()
+    reject_failed_run(args.input.parent)
     output = args.output_dir / report_filename(args.site_name, args.date)
     print(json.dumps(build(json.loads(args.input.read_text(encoding="utf-8-sig")), output), ensure_ascii=False))

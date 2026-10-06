@@ -31,7 +31,7 @@ python scripts/check_hostname_pairs.py --config <run>/config.json --pages <run>/
 
 逐跳 GET，不自动跟随不可见的 redirect；保存 URL、状态码、Location、最终地址、Retry-After、主体 hash/有限片段及 checked_at。显式 scope 限制跨 host；单跳请求、redirect 请求都计入 max_live_requests。重复 URL 响应在本次执行内缓存。默认每秒至多 1 个直接请求；无 paid API。正文读取最多 1 MiB，截断内容标 Human Check，不存整站 HTML。循环被记录；达到跳数上限不是已证明循环。
 
-遵守 live_checks=false，不做网络请求但输出各 pair 的 human_check observation。429 后停止新的网络请求并保留 Retry-After；达到 consecutive-error/budget 限制时剩余 pair 写 Human Check，不自动扩容／立即重试。允许有遗漏的最终 Excel；Coverage 写完成、未完成和选取范围。
+遵守 live_checks=false，不做网络请求但输出各 pair 的 human_check observation。429 后停止新的网络请求并保留 Retry-After；达到非网络内容错误／budget 限制时剩余 pair 写 Human Check，不自动扩容／立即重试。网络／连接失败、超时、DNS/TLS 错误或响应读取中断立即 raise error，停止整个审核；脚本写 run-status.json（failed）及 error.log，保留 usage，不自动重试／续跑、不生成 observations 或最终 Excel，要求用户检查连接后在新 run 目录重新运行整个 skill。403/429 等实际 HTTP 响应不属于这类中断。其他证据缺口允许有遗漏的最终 Excel；Coverage 写完成、未完成和选取范围。
 
 ## 内容与判断
 
@@ -43,7 +43,7 @@ python scripts/check_hostname_pairs.py --config <run>/config.json --pages <run>/
 | 两个有效地址独立返回相同主体内容，没有统一 redirect | Issue / X；列出两个 URL、实际响应和重复证据，建议选定首选地址后永久重定向 |
 | 没有统一 redirect 且内容不同 | Issue / X：域名／内容不一致；不能称为重复内容 |
 | 统一到错误内容、错误 host 或内页被兜底到首页 | Issue / X：目标不对应 |
-| 证据不够、请求错误、预算／hop 上限、动态内容不明确 | Human Check；最终 Excel 写原因及人工动作 |
+| 证据不够、HTTP 错误响应、预算／hop 上限、动态内容不明确 | Human Check；最终 Excel 写原因及人工动作 |
 
 自动 observation 不直接证明 Pass。Agent 对照主 crawl 的 intended page 内容／实体／title/H1，排除两侧都跳错首页、软 404、验证码／登录页和模板正文相同等情况。合法路径变化和多跳本身不报问题。canonical 可以说明合并信号，但不代替本项要求的统一跳转；不声称 Google 已收录／排名两次或发生 ranking 蚕食。
 
@@ -51,4 +51,4 @@ python scripts/check_hostname_pairs.py --config <run>/config.json --pages <run>/
 
 需要浏览器／SF 渲染时只列缺口 URL，不要求全部 pairs 再跑 SF。已有证据直接复用；新的 SF List 补查须允许 allow_hostname_list_crawl，并通过共享 skill 准备、由用户手动运行。此设置不控制 Python direct checks，也不授权 agent 自动启动 SF。保留主 security crawl，不重新加载通用配置覆盖用户 sitemap。
 
-最终 Excel 不等待人工补查：每个缺口写 Human Check 和核查动作。人补证据后在新 run 更新结果，不静默覆盖已交付文件。
+除致命网络中断外，最终 Excel 不等待人工补查：每个缺口写 Human Check 和核查动作。人补证据后在新 run 更新结果，不静默覆盖已交付文件。

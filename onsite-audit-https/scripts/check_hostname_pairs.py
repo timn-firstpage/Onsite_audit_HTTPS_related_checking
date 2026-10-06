@@ -6,13 +6,23 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 import time
 from datetime import datetime, timezone
+from http.client import HTTPException
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlsplit, urlunsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+
+class NetworkInterrupted(RuntimeError):
+    """Abort the entire audit; the user must start a fresh skill run."""
+
+    def __init__(self, url, cause):
+        self.url, self.cause = url, cause
+        super().__init__(f"Network request failed at {url}: {cause}. Check the network and rerun the entire skill in a new run directory.")
 
 
 def parts(url):
@@ -152,8 +162,10 @@ class Checker:
                     parser = TextEvidence()
                     parser.feed(raw[:1048576].decode(reply.headers.get_content_charset() or "utf-8", errors="replace"))
                     result["content"] = parser.evidence()
-        except (URLError, OSError, ValueError, LookupError) as exc:
-            result = {"error": "transport", "error_detail": str(exc)}
+        except (URLError, OSError, HTTPException) as exc:
+            raise NetworkInterrupted(url, exc) from exc
+        except (ValueError, LookupError) as exc:
+            result = {"error": "content_decode", "error_detail": str(exc)}
         self.errors = self.errors + 1 if result.get("error") else 0
         if result.get("status") == 429 or self.errors >= self.stop_errors:
             self.paused = True
@@ -222,6 +234,9 @@ def main():
     output = args.run_dir / "hostname-observations.json"
     if output.exists():
         raise FileExistsError("Use a new run directory; do not overwrite observations")
+    status_path = args.run_dir / "run-status.json"
+    if status_path.exists() and json.loads(status_path.read_text(encoding="utf-8-sig")).get("status") == "failed":
+        raise RuntimeError("This audit run failed. Rerun the entire skill in a new run directory.")
     usage_path = args.run_dir / "usage.json"
     usage = json.loads(usage_path.read_text(encoding="utf-8-sig")) if usage_path.exists() else {}
     save = lambda: usage_path.write_text(json.dumps(usage, indent=2), encoding="utf-8")
@@ -234,7 +249,16 @@ def main():
     records = []
     for pair in pairs:
         if cfg.get("checks", {}).get("live_checks", True):
-            left, right = [checker.check(url) for url in pair["urls"]]
+            try:
+                left, right = [checker.check(url) for url in pair["urls"]]
+            except NetworkInterrupted as exc:
+                failure = {"status": "failed", "error_kind": "network_interrupted", "url": exc.url,
+                           "error_detail": str(exc.cause), "completed_pairs": len(records),
+                           "failed_at": datetime.now(timezone.utc).isoformat(), "rerun_required": True,
+                           "message": str(exc)}
+                status_path.write_text(json.dumps(failure, ensure_ascii=False, indent=2), encoding="utf-8")
+                (args.run_dir / "error.log").write_text(str(exc) + "\n", encoding="utf-8")
+                raise
             observation = compare(left, right)
             left, right = json.loads(json.dumps([left, right]))
             # Retain exact text hash and bounded snippets, not whole-site HTML.
@@ -251,4 +275,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except NetworkInterrupted as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
