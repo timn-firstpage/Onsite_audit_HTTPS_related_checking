@@ -18,6 +18,8 @@ Codex 的当前官方用户级路径是 `~/.agents/skills`，有独立 skill 发
 
 ## Screaming Frog 配置事实
 
+需要新爬取时，先使用独立的 [sf-shared-config](https://github.com/timn-firstpage/On-_site_SF_shared_config)。本仓库的安装脚本和 ZIP 不自动安装它。已有适用文件直接复用；无适用文件才准备默认 main，用户确认 sitemap、手动运行并保存到实际 Downloads。加载失败改为手动 UI Load 指引，不要求 native control 恢复才能继续。完整路由见 [前提约定](../onsite-audit-https/references/sf-shared-config.md)。
+
 默认只做 native HTTP 连接，不使用第三方桥接。server URL 从本机 UI 复制，保存在本机配置；allowed base 来自本机 SF 设置。每个客户端注册一次，三个客户端使用同一地址；启动由 SF 管理。
 
 全局配置不能是把整个文件覆盖：Codex 合并 TOML section，Cursor 合并单个 mcpServers entry；已有同名 server 先检查，不建重复配置。不要共享 OAuth 凭据、cookie 或 licence。

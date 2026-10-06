@@ -11,12 +11,12 @@
 ## 用 Screaming Frog 做
 
 1. 保存原全站 crawl 及其 ID，避免丢失 security 证据。
-2. 将四版本测试列表存档，使用独立的 **List Mode** 上传。
-3. 启用 **Always Follow Redirects**，等待检测完成。
+2. 将四版本测试列表存档。复用合适的既有结果；不足时按 [共享配置前提](sf-shared-config.md) 准备独立的 **List Mode**，由用户上传列表。
+3. 指引用户确认 **Always Follow Redirects** 并手动 Start、监督检测；保存 checkpoint，用户完成后继续，不持续轮询等待。
 4. 导出 **All Redirects**，保留每个起点的 Final Address、最终状态和跳转链。
 5. 获取最终页面对应内容的证据；复用现有 title/H1/主体内容标识，不足时只补少量必要片段。SF 的 final 200 本身不能证明内容对应。
 
-checks.allow_hostname_list_crawl 控制本项定向 list crawl，source.allow_new_crawl 则控制一般全站新 crawl。批量大小、速度与 crawl 范围按本机 SF/任务配置执行；不是无限发现新页面。若复用完整 list 结果，则不重新抓同批地址。
+checks.allow_hostname_list_crawl 控制是否可请求本项定向补爬，source.allow_new_crawl 控制是否可请求一般全站补爬；两者均不授权 agent 自动启动。为 false 时保留已有证据，说明缺口和下一步，不绕过配置改用自动爬虫。批量大小、速度与 crawl 范围按本机 SF/任务配置执行；不是无限发现新页面。大型列表可分批，但批次不能变成未声明的总量上限，Coverage 汇总各批次及未完成范围。若复用完整 list 结果，则不重新抓同批地址。此 List 检查无需重新要求全站 sitemap；不要覆盖用户主 crawl 的 sitemap 设置。
 
 官方流程：[Screaming Frog redirects audit](https://www.screamingfrog.co.uk/seo-spider/tutorials/audit-redirects/)。
 
@@ -30,6 +30,6 @@ canonical、内部链接、sitemap 可以辅助判断，但不作为这个 item 
 
 ## MCP 与报告
 
-先查本机 live schema 是否提供 list upload/start；支持时使用其真实接口。不支持时用 SF UI 创建 List Mode crawl，再通过 MCP 按 ID 加载并导出。`sf_crawl` 只传 start URL 不等于上传 80 个 URL；禁止虚构 list API。
+用户在 SF UI 上传列表并启动；即使 MCP 提供 start 工具，本手动运行流程也不调用它。完成后通过 MCP 按正确 ID 加载并导出，或读取用户保存的必需导出文件。`sf_crawl` 只传 start URL 不等于上传 80 个 URL；禁止虚构 list API。保存的二进制 crawl 需 SF 成功加载，不能单凭文件存在判可用。
 
 Coverage 写实际样本页数、版本数和未完成范围，例如：`抽样 20 页，检测 80 个版本；19 页统一到对应 HTTPS 页面，1 页跳到首页。` 通过仅代表这些样本，不能标全站通过。资料全部落本地，聊天只展示计数与少量异常。参数/预算从 run config 读取。

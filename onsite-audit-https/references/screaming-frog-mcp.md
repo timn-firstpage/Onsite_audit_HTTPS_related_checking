@@ -12,10 +12,10 @@
 
 1. 用 MCP client 的 tools/list 或客户端工具目录取得真实 schema，存为本地 tools schema 快照；不需要把整份工具清单塞进聊天。SF UI 也可以导出 Markdown API。记录版本，只查本流程使用的工具。
 2. 已给 crawl ID 时直接加载；否则 `sf_list_crawls({"limit":3})`，确认站点与时间后 `sf_load_crawl({"crawl_id":"<selected-id>"})`。不要默认用最近那个 crawl。
-3. `sf_crawl_progress({})` 确认状态。未完成的数据可做 interim report，不能判全站 Pass。只有 source.allow_new_crawl 为 true 且没有可复用数据时才启动 crawl；配置路径必须来自本机，并核实范围/资源存储设置。
+3. `sf_crawl_progress({})` 确认状态。未完成的数据可做 interim report，不能判全站 Pass。没有合适证据时按 [共享配置前提](sf-shared-config.md) 准备；source.allow_new_crawl 只控制是否可请求全站补爬，用户在 UI 确认 sitemap 并手动启动。agent 不调用 crawl-start，也不以 sf_crawl 的 config_path 加载配置。已有合适导出不要求 MCP 或历史配置全部可见。
 4. 查询 `sf_list_available_filters_for_seo_element`、`sf_list_available_bulk_exports`、`sf_list_available_reports`，按 live schema 传入参数。保存返回的 Security filter、所需 bulk category 和字段名称映射。名称、大小写、语言差异都以返回值为准，不试猜十几个 category。
 5. 按下表导出所需资料；总是传 file_path，完整数据落文件。返回聊天仅路径、行数、缺字段、少量预览。确认目录属于 SF allowed base，路径使用其相对格式。
-6. 本地归一化与检测，写 findings.json，再生成 Excel。某 URL 未在 loaded crawl 中，不要用 `sf_url_info` 的缺失结果当成实时 404；需要受预算约束的 live 请求或另一次明确的 list crawl。
+6. 本地归一化与检测，写 findings.json，再生成 Excel。某 URL 未在 loaded crawl 中，不要用 `sf_url_info` 的缺失结果当成实时 404；需要受预算约束的 live 请求或按共享流程准备的用户手动 List 补爬。原生配置加载失败立即给手动 Load + sitemap 指引，不重复尝试 native control。
 
 ## Pull 什么资料
 
@@ -63,10 +63,12 @@ sf_url_info({"url": $oneUrl, "file_path": $relativeOutputPath})
 - 批量导出后用本地脚本筛选/计数/去重；不要让模型逐行读取 thousands of URLs。
 - 所有数值预算来自 config。达到 MCP/live request/poll budget 时存 checkpoint 和 Needs Review，不自动扩容。
 - live 检查按唯一 URL 去重，同一 HTTP 图片在 50 页出现只请求一次；Excel 仍保留 50 个 page/resource pair。
-- budget 默认 max_paid_api_calls=0；关闭 Ahrefs、PSI、OpenAI/Anthropic prompts 等附加 integrations。本地 MCP 不等于免费 AI：客户端 token/订阅、SF licence 和第三方 API 成本分别计算。具体费用以实际产品账单为准。
+- budget 默认 max_paid_api_calls=0；本任务不调用 Ahrefs、PSI、OpenAI/Anthropic prompts 等附加 integrations，不为读取既有结果修改其他任务的配置。本地 MCP 不等于免费 AI：客户端 token/订阅、SF licence 和第三方 API 成本分别计算。具体费用以实际产品账单为准。
 - Poll 只在状态确有必要时调用，间隔由配置指定；到 max_poll_calls 后保存待继续状态，避免不断询问进度。
 
 ## 换电脑后要核对的 remarks
+
+以下为需要相应能力时的连接/证据核对项，不是读取已有文件的全局门槛。配置准备归共享 skill；历史设置 unknown 只在影响当前检查证据时记录具体缺口。
 
 - licence 有效、MCP 支持版本、database mode、资源 Store/Crawl 设置。
 - HTTP URL 与 allowed base directory 是该机的真实值；不要从另一台复制绝对路径。

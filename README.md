@@ -109,9 +109,17 @@ export SCREAMING_FROG_MCP_URL
 
 ## 运行
 
+### SF 共享配置前提
+
+新 crawl 的准备由独立 [sf-shared-config](https://github.com/timn-firstpage/On-_site_SF_shared_config) 负责，需单独安装；HTTPS 的安装脚本和 ZIP 不包含它。已有适用 crawl/导出时直接复用，先核对站点、时间、范围、完成状态和必需字段，不要求重新加载或证明全部历史设置。部分证据可用时只补缺口，不强制重爬全站。
+
+没有适用数据时自动用 shared skill 的 main；可靠记录显示配置已加载且未变则跳过加载。你在 UI 确认网站与 sitemap，手动 Start 并监督，再保存/导出到实际 Downloads 并提供路径。native control 或独立加载失败立即提供手动 Load + sitemap 指引，不反复重试、不停留 pending，也不通过 sf_crawl(config_path) 偷启动。正在进行的 crawl 保留原样，返回下一步 checkpoint。HTTPS 与 robots 同一 SF 会话共享准备记录，不分别覆盖配置或重设 sitemap。
+
+调用返回后仍检查实际数据；sf-handover.json 是交接记录，不是审核通过证明。429 区分网站与 MCP 来源，缺失数据不当作零问题。详见 [完整前提及交接边界](onsite-audit-https/references/sf-shared-config.md)。
+
 www/non-www 默认由 Screaming Frog 检查现有 crawl 中全部符合范围的 HTML 页面，`hostname_page_limit: null` 不设采样页数上限；Python 只准备列表、分析完整导出及生成 Excel。启用 SF List Mode 的 Always Follow Redirects 并导出 All Redirects，再核对最终页内容。只有主动设置 `hostname_page_limit: 20` 才抽样 20 页（最多 80 个测试起点）。[批量检测操作与 MCP 限制](onsite-audit-https/references/hostname-sampling.md)。
 
-旧 run/config.json 中若仍写着 20，需要改成 null；更新 skill 不会覆写旧 run 配置。新模板已默认 null。`allow_hostname_list_crawl` 控制本项的定向 list crawl，不等同于新建一般全站 crawl。
+旧 run/config.json 中若仍写着 20，需要改成 null；更新 skill 不会覆写旧 run 配置。新模板已默认 null。`allow_hostname_list_crawl` 控制是否可请求本项的定向 List 补爬；`source.allow_new_crawl` 控制是否可请求一般全站补爬。两者都由用户手动 Start，不能作为 agent 自动启动许可；为 false 时说明未完成范围。已有四版本结果适用则无需补爬。
 
 在 repo 内或用户指定的数据目录创建唯一 run；将模板复制到 run/config.json，填写：
 
@@ -141,7 +149,7 @@ Mac 的报表命令用 `.venv/bin/python` 替代 `.venv/Scripts/python.exe`；�
 1. 默认复用 crawl，不自动启动新 crawl；同一批导出只拉一次。
 2. 完整资料导出到文件；只把计数、缺失字段和少量实例送进上下文。
 3. 预算在 config 中可调，默认 30 MCP calls、200 agent/Python 直接 live requests；直接请求的 redirect hops 和 retries 计入该预算。SF 授权的 list crawl 请求由 SF 的 crawl 配置控制，不拿 200 直接请求预算偷偷截断 SF 页面列表。MCP 调用超预算时保存 checkpoint 并标记未完成，不暗中增加用量。
-4. 默认付费第三方 API calls 为 0；这三个检查不需要 Ahrefs、AI prompts 或 embedding。关闭已有 crawl config 中的相关 integration 才能落实此限制。
+4. 默认付费第三方 API calls 为 0；这三个检查不调用 Ahrefs、AI prompts 或 embedding，不为读取旧结果修改其他任务的配置。
 5. 表格渲染、去重和复核在本机执行，不发起 LLM API 请求。真实客户端 token/订阅用量仍由客户端计费，不能承诺固定节省百分比。
 6. 多个 agent 共用一个 Spider 时，串行加载/导出；其他 agent 读同一个 run 的归档文件，避免重复 crawl 和上下文。
 

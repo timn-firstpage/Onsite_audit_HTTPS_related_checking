@@ -15,7 +15,7 @@
 | 主域名一致性 | 内部链接的 source/target、canonical source/target、sitemap URL 与位置 | 缺哪份记录哪份，不声称全部检查 |
 | Live check | test URL、时间、每一跳 URL/状态码/Location、final URL、最终状态码、错误类别 | MIME、TLS 结果、资源等价性判断 |
 
-请求失败使用明确 error_kind：timeout / dns / tls / blocked / loop / budget / unavailable。成功返回 200 也需判断是否对应页面/资源。保留路径和 query，不擅自删掉参数。跨域跳转记录后停止，除非该 host 在 scope 中。HTTP 状态为 crawl 证据时记录其时间，不冒充 live 检测。
+请求失败使用明确 error_kind：timeout / dns / tls / blocked / rate_limited / loop / budget / unavailable。429 记录来源（网站或 MCP）、状态码、Retry-After 和受影响范围；工具错误不伪造成网站响应。成功返回 200 也需判断是否对应页面/资源。保留路径和 query，不擅自删掉参数。跨域跳转记录后停止，除非该 host 在 scope 中。HTTP 状态为 crawl 证据时记录其时间，不冒充 live 检测。
 
 9.3 的 source URL 保留原路径/query 用于生成测试地址，最终 URL 允许合法路径变化；不能用 final URL 字符串不相等直接判错。归档 content_match（true/false/unknown）及简短依据，例如对应产品标识、服务名称、title/H1/主体内容。证据不足时 unknown → Needs Review。non-www 最终跳到有效且内容对应的 www 页面就是 Pass；跳转状态码或次数本身不产生问题行。HTTPS 和其他 canonical/link 信号不作为此 hostname 检查的额外门槛。
 
@@ -33,6 +33,7 @@
   usage.json           MCP calls, live requests, retries, paid calls
   {site name}_https_audit_{YYYY-MM-DD}.xlsx
   handover.md          current state, coverage, next action
+  sf-handover.json     optional shared preparation record or reference
 ```
 
 run_id 用安全的站点标识与时间/随机后缀生成，不覆盖旧 run。raw 保留完整证据；聊天仅返回行数和少量样本。缓存 key 包括 crawl ID、工具、filter/category、字段集合、版本；live key 包括 URL、请求方式及必要请求头配置，不缓存凭据。crawl 改变或显式 force_refresh 时失效。
@@ -60,3 +61,5 @@ hostname 行键：test_url, expected_url, issue, suggestion。
 不确定行用 issue 前缀 `review:`；必须在 suggestion 中写明尚未验证的部分。有确定问题且同时有未完成检测时总览可写 Issue，但 coverage 必须包含未完成范围。
 
 此 JSON 是 agent 判断后的结果，不是把原始 SF CSV 直接改名；build_report.py 只验证并渲染，不自动执行 MCP/crawl/网络检查。
+
+共享 skill 的 sf-handover.json 只记录配置/用户确认/文件交接，不是 findings.json，也不能直接传给报表生成器。各检查的证据完整性仍由本 skill 按实际文件验证。
