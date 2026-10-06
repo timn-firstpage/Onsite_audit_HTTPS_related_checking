@@ -1,5 +1,7 @@
 # Onsite Audit HTTPS Related Checking
 
+<p align="center"><img src="assets/onsite-audit-cover.png" alt="Onsite audit cover showing HTTPS security, website inspection, crawl connections, hostname redirects, and an audit report" width="640"></p>
+
 可移植的 HTTPS 审核 skill，供本机 **Codex、Claude Code、Cursor** 使用。基于 Screaming Frog 官方内置 MCP 或现有导出资料，检查 HTTP URLs、Mixed Content、www/non-www，并交付精简 Excel。每台电脑自己填写本地路径与 MCP 地址；仓库不绑定作者电脑。
 
 ## 输出
