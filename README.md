@@ -6,7 +6,7 @@
 
 ## 输出
 
-Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，发现问题显示 **X**；待确认或未检测显示 Needs Review / Not Tested，不冒充通过。发现任何内部 HTTP URL 就 X（即使已转 HTTPS）；Mixed Content 检测完成后零条目 √，有条目 X。空/NaN/NA 若代表缺失资料，不能自动给 √。
+Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，发现问题显示 **X**；待确认或未检测显示 **Human Check**；已有问题同时有证据缺口显示 **X + Human Check**，不冒充通过。证据不足仍输出最终 Excel，在 Issue／Suggestion 写清缺口与人工核查动作。发现任何内部 HTTP URL 就 X（即使已转 HTTPS）；Mixed Content 检测完成后零条目 √，有条目 X。空/NaN/NA 若代表缺失资料，不能自动给 √。
 
 文件名固定为 **`{site name}_https_audit_{date}.xlsx`**，日期格式 YYYY-MM-DD，例如 `Example_https_audit_2026-10-05.xlsx`。site name 从本次配置/用户提供的名称读取；缺失时使用不带 www 的站点 hostname。日期按用户时区解析或使用指定 audit_date，不由 Mac/Windows 系统日期擅自决定。同日重复运行使用不同 run 目录，不自动加后缀或覆盖旧报告。
 
@@ -16,7 +16,7 @@ Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，�
 | 9.2 HTTPS Mixed Content | Page Address · HTTP Resource URL · Issue · Suggestion |
 | 9.3 WWW VS NON-WWW | Test URL · Expected URL · Issue · Suggestion |
 
-只输出问题或待确认行，不建空明细 sheet。Overview 保留结果、数量和范围，区分 Pass / Issue / Needs Review / Not Tested。建议根据实际响应生成，不机械重复 “change to HTTPS”。www/non-www 的目标由 preferred_origin 配置；本次 www 审核只要 non-www 能跳到有效、内容对应的 www 页面就通过。路径变化、多次跳转或状态码类型本身不作为该项问题；内容无法确认时标记 Needs Review。HTTP/HTTPS 的安全问题由其他检查处理。
+只输出确认问题或 Human Check 行，不建空明细 sheet。Overview 保留结果、数量和范围。www/non-www 默认用 Python 检查实际首页两个版本，以及主 crawl 中已经出现的内页配对；不预设 www 为首选，不为全部内页生成四版本。两个独立地址提供相同内容且没有统一重定向时，Issue 列出两个 URL 及证据，Suggestion 写选定首选地址后的合并动作。内容不同则说明域名／路由不一致，不冒称重复。证据不足照样交付最终文件并标 Human Check，不能声称两个 URL 已排名或排名被蚕食。HTTP／Mixed Content 仍独立基于主 crawl 检查。
 
 ## 文件导航
 
@@ -121,9 +121,14 @@ export SCREAMING_FROG_MCP_URL
 
 需要你手动 Load 时，Agent 先将选定 `.seospiderconfig` 保存到 SF 电脑的实际 Downloads 并验证，再给该路径让你加载和检查 sitemap。同名不同内容不覆盖；无法访问该电脑／目录时先给下载或复制步骤并说明未完成保存。该配置文件不是稍后保存的 `.seospider` 爬取结果。
 
-www/non-www 默认由 Screaming Frog 检查现有 crawl 中全部符合范围的 HTML 页面，`hostname_page_limit: null` 不设采样页数上限；Python 只准备列表、分析完整导出及生成 Excel。启用 SF List Mode 的 Always Follow Redirects 并导出 All Redirects，再核对最终页内容。只有主动设置 `hostname_page_limit: 20` 才抽样 20 页（最多 80 个测试起点）。[批量检测操作与 MCP 限制](onsite-audit-https/references/hostname-sampling.md)。
+### 9.3：首页与已观察 pair
 
-旧 run/config.json 中若仍写着 20，需要改成 null；更新 skill 不会覆写旧 run 配置。新模板已默认 null。`allow_hostname_list_crawl` 控制是否可请求本项的定向 List 补爬；`source.allow_new_crawl` 控制是否可请求一般全站补爬。两者都由用户手动 Start，不能作为 agent 自动启动许可；为 false 时说明未完成范围。已有四版本结果适用则无需补爬。
+1. 从本次实际网站 URL 生成 HTTPS 首页的 www／non-www 地址，不写死任何域名。
+2. 从主 crawl 的 HTML URL 找两侧实际存在的配对：只相差 leading www.，path／query 相同。相同标题不能独立证明配对或内容重复。
+3. 优先复用足够的响应／内容证据，缺少时用包内 [check_hostname_pairs.py](onsite-audit-https/scripts/check_hostname_pairs.py) 逐跳 GET，记录最终地址和有限主体内容。Agent 核对目的与软 404，只有未解决的动态内容才补 SF／浏览器。
+4. 统一到同一可用 HTTPS 对应页 → √；没有统一且主体内容相同 → X，写明两个 URL；内容不同、错误目标或确认循环 → X 并区分原因；超时、429、预算停止、内容不足 → Human Check，照样导出 Excel。
+
+`hostname_executor` 新默认 python；`hostname_page_limit: null` 表示首页 + 全部已观察 pairs，正整数仅限制内页 pairs 并披露遗漏。旧 run 的 screaming_frog／20 不会自动改写，需要按此次任务迁移；不能继续理解为所有页面四版本。直接请求受共享 200 次默认预算限制，含 hops；不够时标 Human Check，不暗中加预算。`allow_hostname_list_crawl` 只控制是否可请求用户运行的 SF 补查，不控制 Python direct checks。[选择、命令与判断边界](onsite-audit-https/references/hostname-sampling.md)。
 
 在 repo 内或用户指定的数据目录创建唯一 run；将模板复制到 run/config.json，填写：
 

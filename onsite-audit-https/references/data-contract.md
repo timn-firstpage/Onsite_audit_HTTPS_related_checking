@@ -17,7 +17,7 @@
 
 请求失败使用明确 error_kind：timeout / dns / tls / blocked / rate_limited / loop / budget / unavailable。429 记录来源（网站或 MCP）、状态码、Retry-After 和受影响范围；工具错误不伪造成网站响应。成功返回 200 也需判断是否对应页面/资源。保留路径和 query，不擅自删掉参数。跨域跳转记录后停止，除非该 host 在 scope 中。HTTP 状态为 crawl 证据时记录其时间，不冒充 live 检测。
 
-9.3 的 source URL 保留原路径/query 用于生成测试地址，最终 URL 允许合法路径变化；不能用 final URL 字符串不相等直接判错。归档 content_match（true/false/unknown）及简短依据，例如对应产品标识、服务名称、title/H1/主体内容。证据不足时 unknown → Needs Review。non-www 最终跳到有效且内容对应的 www 页面就是 Pass；跳转状态码或次数本身不产生问题行。HTTPS 和其他 canonical/link 信号不作为此 hostname 检查的额外门槛。
+9.3 默认范围是实际 HTTPS 首页两个版本，以及主 crawl 中已观察 www/non-www pairs；不为所有 HTML 生成四版本。保留路径/query，实际最终路径可以变化。归档两个 URL 的 chain/final response、content_match（true/false/unknown）、简短主体／实体依据和选取来源。目标统一到同一有效 HTTPS 对应页面才 Pass，首选域名可为任一侧；配置明确指定时尊重配置。分别返回相同内容却未统一到一个 URL 是重复未合并 Issue；不同内容未统一是内容／路由不一致。共同错误页、首页兜底、共享 title/header 不能证明 Pass／重复。未知响应／对应内容为 Human Check，仍生成最终 Excel。canonical 不代替 redirect；不声称实际 Google 收录或 ranking 蚕食。
 
 ## 存档
 
@@ -44,8 +44,8 @@ run_id 用安全的站点标识与时间/随机后缀生成，不覆盖旧 run�
 {
   "overview": [
     {"check":"9.1","result":"Issue","coverage":"已检查 120 个 crawl URL；live 验证 1 个"},
-    {"check":"9.2","result":"Not Tested","coverage":"未提供 mixed content export"},
-    {"check":"9.3","result":"Not Tested","coverage":"尚未配置 preferred origin"}
+    {"check":"9.2","result":"Human Check","coverage":"未提供 mixed content export"},
+    {"check":"9.3","result":"Human Check","coverage":"尚未取得首页及已观察 pairs 的响应／内容证据"}
   ],
   "http": [
     {"address":"http://example.com/a/","issue":"http-200","issue_description":"HTTP 页面返回 200。","suggestion":"已验证对应 HTTPS 页面，请配置永久重定向。"}
@@ -59,7 +59,7 @@ http 行键：address, issue, issue_description, suggestion。
 mixed 行键：page_address, resource_url, issue, issue_description, suggestion。
 hostname 行键：test_url, expected_url, issue, issue_description, suggestion。
 issue 是内部分类/去重代码；issue_description 是 Excel Issue 列的可读事实描述，suggestion 是独立 Suggestion 列的修复动作。旧 findings.json 缺少 issue_description 时须根据证据补写，将原组合文本拆分；生成器不猜测如何拆句。
-不确定行用 issue 前缀 `review:`；在 issue_description 写明尚未验证的部分，suggestion 写具体核验动作。有确定问题且同时有未完成检测时总览可写 Issue，但 coverage 必须包含未完成范围。
+不确定行用 issue 前缀 `human-check:`（兼容旧 `review:`）；在 issue_description 写明尚未验证的部分，suggestion 写具体核验动作。有确定问题且同时有未完成检测时总览写 Issue，Flag 显示 X + Human Check，保留独立 Human Check 行，coverage 包含未完成范围。没有确认问题但证据缺失时写 Human Check，不能为了导出而改成 Pass／Issue。即使全部缺证据也输出最终 Excel；生成器会为无明细的 Human Check 自动生成基于 Coverage 的人工核查行。实际受影响 URL 未提供时显示 Not supplied，不猜 URL。
 
 此 JSON 是 agent 判断后的结果，不是把原始 SF CSV 直接改名；build_report.py 只验证并渲染，不自动执行 MCP/crawl/网络检查。
 

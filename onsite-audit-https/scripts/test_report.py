@@ -33,12 +33,12 @@ class ReportTests(unittest.TestCase):
             result = build(data, output)
             self.assertEqual(result["findings"]["http"], 1)
             wb = load_workbook(output)
-            self.assertEqual(wb.sheetnames, ["Overview", "9.1 HTTPS VS HTTP"])
+            self.assertEqual(wb.sheetnames, ["Overview", "9.1 HTTPS VS HTTP", "9.2 HTTPS Mixed Content", "9.3 WWW VS NON-WWW"])
             self.assertEqual(wb.worksheets[1]["A2"].value, data["http"][0]["address"])
             self.assertEqual(wb.worksheets[1]["B2"].value, "HTTP page returns 200")
             self.assertEqual(wb.worksheets[1]["C2"].value, "=untrusted text")
             self.assertEqual(wb.worksheets[1]["C2"].data_type, "s")
-            self.assertEqual(wb["Overview"]["B4"].value, "Needs Review")
+            self.assertEqual(wb["Overview"]["B4"].value, "Human Check")
             self.assertEqual(wb["Overview"]["B2"].value, "X")
             wb.close()
             with self.assertRaises(FileExistsError):
@@ -69,9 +69,27 @@ class ReportTests(unittest.TestCase):
             build(data, output)
             wb = load_workbook(output)
             self.assertEqual(wb["Overview"]["B3"].value, "√")
-            self.assertEqual(wb["Overview"]["B4"].value, "Needs Review")
+            self.assertEqual(wb["Overview"]["B4"].value, "Human Check")
             self.assertEqual(wb["Overview"]["B2"].value, "X")
             wb.close()
+
+    def test_partial_defect_keeps_x_and_exports_human_check(self):
+        data = fixture()
+        data['http'].append({'address':'https://example.com/missing', 'issue':'human-check:response',
+                             'issue_description':'Final response unverified; timed out.', 'suggestion':'Manually inspect redirect and destination.'})
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            build(data,Path(directory)/'audit.xlsx')
+            wb=load_workbook(Path(directory)/'audit.xlsx')
+            self.assertEqual(wb['Overview']['B2'].value,'X + Human Check')
+            self.assertTrue(wb['9.1 HTTPS VS HTTP']['B3'].value.startswith('Human Check'))
+            self.assertEqual(wb['9.1 HTTPS VS HTTP']['C3'].value,'Manually inspect redirect and destination.')
+            self.assertTrue(wb['9.3 WWW VS NON-WWW']['C2'].value.startswith('Human Check'))
+            wb.close()
+
+    def test_review_only_rows_cannot_be_confirmed_issue(self):
+        data=fixture()
+        data['http'][0]['issue']='human-check:timeout'
+        with self.assertRaises(ValueError):normalize(data)
 
 
 if __name__ == "__main__":

@@ -1,35 +1,54 @@
-# WWW / non-WWW：SF 批量验证与可选采样
+# WWW / non-WWW：首页与已观察配对
 
-## 数量与范围
+## 选择范围
 
-默认 executor 为 screaming_frog，checks.hostname_page_limit 为 null：检查现有 crawl 中所有符合范围的不同 HTML 页面，不自动截取 20 条。只有显式设置正整数时才采样；例如 20 指 20 个不同页面，不是 20 个 HTTP 请求。采样时按页面类型挑选代表样本，包括首页与存在的分类、产品/服务、文章、语言版本页面。记录选择清单与原 crawl 是否完整。
+从实际 site.start_url 提取 hostname，只增减最前面的 www.，生成 HTTPS 首页的两个地址。不写死域名、不预设 www 为首选。其他子域名、不同注册域名、相似名称／标题不自动归组。
 
-没有固定 20 页上限，例如 crawl 有 100 个合适页面就生成最多 400 个测试起点。批量由 SF 抓取、完整导出后用脚本分析，聊天只接收异常摘要。脚本不能替未抓取的四版本生成实际响应证据。max_live_requests 限制 agent/Python 的直接网络请求，不作为 SF 已授权 list crawl 的页面数限制；MCP call 与 poll 预算仍需遵守，超限记录 checkpoint，不缩成 20 页冒充完成。
+内页只从主 crawl 的 HTML URL 找配对：去掉 leading www. 和 fragment 后，base hostname、port、path 与 exact query 相同，且两侧实际出现。保留已观察 URL 的协议；不为只有一侧的内页生成另一个版本，不全量生成 HTTP/HTTPS 四版本。相同 title/H1 仅作内容线索。不同路径的潜在重复页属于另一个重复内容检查，不能擅自扩大此项。
 
-每个样本生成 HTTP/HTTPS × www/non-www 四个版本，保留源路径/query。20 个页面最多 80 个唯一起点，重定向目标可能增加实际请求数。四个版本一起构成一个页面的验证组。此 sample 只用于 9.3，不能替代 9.1/9.2 的全站 security crawl。
+hostname_page_limit=null 表示首页 + 全部已观察 pairs。正整数限制已观察内页 pairs，首页保留；未选部分写 Coverage。不声称首页通过代表所有内页通过，也不把未出现的 www 地址视为不存在。显式 allowed_hosts 限制仍需遵守；若缺少对应 host 许可则记录 Human Check，不偷偷扩大 scope。
 
-## 用 Screaming Frog 做
+主 crawl URL inventory 缺失／截断时，可以先检查首页，但不能把“没有资料”当作“已观察到零内页 pairs”；在最终报告记录 inventory 缺口及 Human Check。如果用户明确指定 preferred_origin，核对跳转是否符合该选择；未指定时依据实际统一目标，不写死方向。
 
-1. 保存原全站 crawl 及其 ID，避免丢失 security 证据。
-2. 将四版本测试列表存档。复用合适的既有结果；不足时按 [共享配置前提](sf-shared-config.md) 准备独立的 **List Mode**，由用户上传列表。
-3. 指引用户确认 **Always Follow Redirects** 并手动 Start、监督检测；保存 checkpoint，用户完成后继续，不持续轮询等待。
-4. 导出 **All Redirects**，保留每个起点的 Final Address、最终状态和跳转链。
-5. 获取最终页面对应内容的证据；复用现有 title/H1/主体内容标识，不足时只补少量必要片段。SF 的 final 200 本身不能证明内容对应。
+## Python 执行
 
-checks.allow_hostname_list_crawl 控制是否可请求本项定向补爬，source.allow_new_crawl 控制是否可请求一般全站补爬；两者均不授权 agent 自动启动。为 false 时保留已有证据，说明缺口和下一步，不绕过配置改用自动爬虫。批量大小、速度与 crawl 范围按本机 SF/任务配置执行；不是无限发现新页面。大型列表可分批，但批次不能变成未声明的总量上限，Coverage 汇总各批次及未完成范围。若复用完整 list 结果，则不重新抓同批地址。此 List 检查无需重新要求全站 sitemap；不要覆盖用户主 crawl 的 sitemap 设置。
+先复用足够的已有响应、跳转链、内容资料；缺少当前证据时使用包内 check_hostname_pairs.py。Agent 将 SF 实际 Address/Content Type 字段映射为 normalized-pages.json：
 
-官方流程：[Screaming Frog redirects audit](https://www.screamingfrog.co.uk/seo-spider/tutorials/audit-redirects/)。
+```json
+[
+  {"url":"https://example.org/service/","content_type":"text/html"},
+  {"url":"https://www.example.org/service/","content_type":"text/html"}
+]
+```
 
-## 通过标准
+example.org 仅说明结构，实际输入全部来自本次网站。脚本不直接猜 SF CSV 的本地化字段，也不把非 HTML 资源当内页。
 
-四个版本收敛到同一个可用的选定 HTTPS 页面，non-www 跳到了选定主域名，且内容是该样本对应的内容 → 通过（用户的 flag √）。允许目标路径变化、多次跳转；不因为跳转状态码类型而单独判失败。
+```text
+python scripts/check_hostname_pairs.py --config <run>/config.json --pages <run>/normalized-pages.json --run-dir <run>
+```
 
-没有跳转、最终地址不同/错误 hostname、跳到错误内容或首页、循环、目标不可访问 → 失败（X + 具体原因）。两个域名各自返回 200、即使内容一样，也不是统一跳转到同一目标。
+这里的 scripts 路径相对于安装的 HTTPS skill；解释器来自实际 AUDIT_PYTHON/venv。使用整合任务同一 run/usage.json，不新建预算绕过累计限制。输出 hostname-observations.json 是证据，不是可直接交给 build_report.py 的 findings.json。
 
-canonical、内部链接、sitemap 可以辅助判断，但不作为这个 item 的额外通过门槛。超时、截断或无法确定内容对应 → 待确认，不直接给 √。
+逐跳 GET，不自动跟随不可见的 redirect；保存 URL、状态码、Location、最终地址、Retry-After、主体 hash/有限片段及 checked_at。显式 scope 限制跨 host；单跳请求、redirect 请求都计入 max_live_requests。重复 URL 响应在本次执行内缓存。默认每秒至多 1 个直接请求；无 paid API。正文读取最多 1 MiB，截断内容标 Human Check，不存整站 HTML。循环被记录；达到跳数上限不是已证明循环。
 
-## MCP 与报告
+遵守 live_checks=false，不做网络请求但输出各 pair 的 human_check observation。429 后停止新的网络请求并保留 Retry-After；达到 consecutive-error/budget 限制时剩余 pair 写 Human Check，不自动扩容／立即重试。允许有遗漏的最终 Excel；Coverage 写完成、未完成和选取范围。
 
-用户在 SF UI 上传列表并启动；即使 MCP 提供 start 工具，本手动运行流程也不调用它。完成后通过 MCP 按正确 ID 加载并导出，或读取用户保存的必需导出文件。`sf_crawl` 只传 start URL 不等于上传 80 个 URL；禁止虚构 list API。保存的二进制 crawl 需 SF 成功加载，不能单凭文件存在判可用。
+## 内容与判断
 
-Coverage 写实际样本页数、版本数和未完成范围，例如：`抽样 20 页，检测 80 个版本；19 页统一到对应 HTTPS 页面，1 页跳到首页。` 通过仅代表这些样本，不能标全站通过。资料全部落本地，聊天只展示计数与少量异常。参数/预算从 run config 读取。
+脚本忽略脚本、样式及常见导航／页眉页脚，优先提取 main；保留 title/H1 作辅助。足够的静态正文完全相同是 identical 线索；不同文字不必然代表不同页面，agent 须排除时间、cookie、个性化等变化。少于 80 字符、JS 空壳、403/429、错误响应或无法确定目的时写 Human Check。静态文本阈值只是自动证据边界，不是 SEO 质量门槛。所存内容不能保证代表浏览器最终渲染。
+
+| 观察 | Agent 决策 |
+| --- | --- |
+| 最终地址统一、页面可用且内容对应原页面 | Pass / √ |
+| 两个有效地址独立返回相同主体内容，没有统一 redirect | Issue / X；列出两个 URL、实际响应和重复证据，建议选定首选地址后永久重定向 |
+| 没有统一 redirect 且内容不同 | Issue / X：域名／内容不一致；不能称为重复内容 |
+| 统一到错误内容、错误 host 或内页被兜底到首页 | Issue / X：目标不对应 |
+| 证据不够、请求错误、预算／hop 上限、动态内容不明确 | Human Check；最终 Excel 写原因及人工动作 |
+
+自动 observation 不直接证明 Pass。Agent 对照主 crawl 的 intended page 内容／实体／title/H1，排除两侧都跳错首页、软 404、验证码／登录页和模板正文相同等情况。合法路径变化和多跳本身不报问题。canonical 可以说明合并信号，但不代替本项要求的统一跳转；不声称 Google 已收录／排名两次或发生 ranking 蚕食。
+
+## 只补无法判断的内容
+
+需要浏览器／SF 渲染时只列缺口 URL，不要求全部 pairs 再跑 SF。已有证据直接复用；新的 SF List 补查须允许 allow_hostname_list_crawl，并通过共享 skill 准备、由用户手动运行。此设置不控制 Python direct checks，也不授权 agent 自动启动 SF。保留主 security crawl，不重新加载通用配置覆盖用户 sitemap。
+
+最终 Excel 不等待人工补查：每个缺口写 Human Check 和核查动作。人补证据后在新 run 更新结果，不静默覆盖已交付文件。

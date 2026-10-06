@@ -40,20 +40,37 @@ def normalize(data):
             identity = tuple(row[f] for f in fields[:-2]) + (row["issue"],)
             if identity in unique and unique[identity] != row:
                 raise ValueError(f"{key}: conflicting duplicate {identity}")
-            unique[identity] = row
+            unique[identity] = dict(row)
         rows[key] = list(unique.values())
         summary = by_check[check]
-        if summary.get("result") not in {"Pass", "Issue", "Needs Review", "Not Tested"}:
+        if summary.get("result") in {"Needs Review", "Not Tested"}:
+            summary = dict(summary, result="Human Check")
+            by_check[check] = summary
+        if summary.get("result") not in {"Pass", "Issue", "Human Check"}:
             raise ValueError(f"{check}: invalid result")
         if not isinstance(summary.get("coverage"), str) or not summary["coverage"].strip():
             raise ValueError(f"{check}: coverage is required")
-        if rows[key] and summary["result"] in {"Pass", "Not Tested"}:
+        if rows[key] and summary["result"] == "Pass":
             raise ValueError(f"{check}: findings contradict result")
         if not rows[key] and summary["result"] == "Issue":
             raise ValueError(f"{check}: Issue requires evidence rows")
-        if summary["result"] == "Issue" and all(r["issue"].startswith("review:") for r in rows[key]):
-            raise ValueError(f"{check}: only review rows, use Needs Review")
-    return overview, rows
+        if summary["result"] == "Issue" and all(r["issue"].startswith(("review:", "human-check:")) for r in rows[key]):
+            raise ValueError(f"{check}: only review rows, use Human Check")
+        if summary["result"] == "Human Check" and not rows[key]:
+            actions = {
+                "http": "Provide the complete Security HTTP URLs/inlinks export and verify affected HTTPS destinations.",
+                "mixed": "Provide complete HTTPS page/HTTP resource pairs and required rendering evidence.",
+                "hostname": "Check the homepage and observed www/non-www pairs; verify redirects and corresponding content.",
+            }
+            row = {f: "Not supplied" for f in fields}
+            row.update(issue="human-check:missing-evidence", issue_description="Human Check: " + summary["coverage"], suggestion=actions[key])
+            rows[key].append(row)
+        if summary["result"] == "Human Check" and any(not r["issue"].startswith(("review:", "human-check:")) for r in rows[key]):
+            raise ValueError(f"{check}: confirmed defects require Issue result")
+        for row in rows[key]:
+            if row["issue"].startswith(("review:", "human-check:")) and not row["issue_description"].startswith("Human Check"):
+                row["issue_description"] = "Human Check: " + row["issue_description"]
+    return [by_check[r["check"]] for r in overview], rows
 
 
 def build(data, output):
@@ -71,7 +88,8 @@ def build(data, output):
     ws.append(["Check", "Flag", "Findings", "Coverage"])
     for key, (check, *_rest) in SPECS.items():
         summary = next(r for r in overview if r["check"] == check)
-        flag = {"Pass": "√", "Issue": "X"}.get(summary["result"], summary["result"])
+        has_gaps = any(r["issue"].startswith(("review:", "human-check:")) for r in rows[key])
+        flag = {"Pass": "√", "Issue": "X + Human Check" if has_gaps else "X", "Human Check": "Human Check"}[summary["result"]]
         ws.append([check, flag, len(rows[key]), summary["coverage"]])
     for key, (_, title, headers, fields) in SPECS.items():
         if not rows[key]:

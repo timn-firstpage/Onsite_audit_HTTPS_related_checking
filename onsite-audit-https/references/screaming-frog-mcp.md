@@ -61,7 +61,7 @@ sf_url_info({"url": $oneUrl, "file_path": $relativeOutputPath})
 - 每站点一个 run，复用同 crawl 的 raw exports；agent 交接读取 handover + manifest + counts。
 - 仅 security 数据和相关 URL 元数据；不导出整站正文、截图、embedding。
 - 批量导出后用本地脚本筛选/计数/去重；不要让模型逐行读取 thousands of URLs。
-- 所有数值预算来自 config。达到 MCP/live request/poll budget 时存 checkpoint 和 Needs Review，不自动扩容。
+- 所有数值预算来自 config。达到 MCP/live request/poll budget 时存 checkpoint 和 Human Check，不自动扩容。
 - live 检查按唯一 URL 去重，同一 HTTP 图片在 50 页出现只请求一次；Excel 仍保留 50 个 page/resource pair。
 - budget 默认 max_paid_api_calls=0；本任务不调用 Ahrefs、PSI、OpenAI/Anthropic prompts 等附加 integrations，不为读取既有结果修改其他任务的配置。本地 MCP 不等于免费 AI：客户端 token/订阅、SF licence 和第三方 API 成本分别计算。具体费用以实际产品账单为准。
 - Poll 只在状态确有必要时调用，间隔由配置指定；到 max_poll_calls 后保存待继续状态，避免不断询问进度。
@@ -76,3 +76,5 @@ sf_url_info({"url": $oneUrl, "file_path": $relativeOutputPath})
 - JavaScript rendering 是否需要，当前 crawl 是否完整、存档是否仍可访问。
 - 三个客户端各自 tools/list 成功。能打开 URL 不等于 MCP handshake 成功。
 - 本仓库不提供未验证的 stdio 启动参数；需要 stdio 时使用官方扩展/本机导出的设置。
+
+9.3 新默认 Python 首页／已观察 pair 检查，SF 仅按需补渲染证据。缺字段／预算／工具失败时保留证据并输出最终 Excel，相关项和 Issue 标 Human Check，不等待全站补爬完成才交付。
