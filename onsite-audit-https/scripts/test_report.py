@@ -40,6 +40,9 @@ class ReportTests(unittest.TestCase):
             self.assertEqual(wb.worksheets[1]["C2"].data_type, "s")
             self.assertEqual(wb["Overview"]["B4"].value, "Human Check")
             self.assertEqual(wb["Overview"]["B2"].value, "X")
+            self.assertEqual([wb["Overview"].cell(i, 1).value for i in range(2, 5)], [
+                "9.1 HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content",
+                "9.2 Mixed Content", "9.3 WWW vs non-WWW"])
             wb.close()
             with self.assertRaises(FileExistsError):
                 build(data, output)

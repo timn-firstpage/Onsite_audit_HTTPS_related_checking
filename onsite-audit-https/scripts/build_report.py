@@ -11,6 +11,12 @@ SPECS = {
     "hostname": ("9.3", "9.3 WWW VS NON-WWW", ["Test URL", "Expected URL", "Issue", "Suggestion"], ["test_url", "expected_url", "issue_description", "suggestion"]),
 }
 
+CHECK_NAMES = {
+    "9.1": "HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content",
+    "9.2": "Mixed Content",
+    "9.3": "WWW vs non-WWW",
+}
+
 
 def report_filename(site_name, audit_date):
     if not isinstance(site_name, str) or not site_name.strip():
@@ -97,7 +103,7 @@ def build(data, output):
         summary = next(r for r in overview if r["check"] == check)
         has_gaps = any(r["issue"].startswith(("review:", "human-check:")) for r in rows[key])
         flag = {"Pass": "√", "Issue": "X + Human Check" if has_gaps else "X", "Human Check": "Human Check"}[summary["result"]]
-        ws.append([check, flag, len(rows[key]), summary["coverage"]])
+        ws.append([f"{check} {CHECK_NAMES[check]}", flag, len(rows[key]), summary["coverage"]])
     for key, (_, title, headers, fields) in SPECS.items():
         if not rows[key]:
             continue
@@ -124,7 +130,7 @@ def build(data, output):
         for col in sheet.columns:
             label = col[0].value
             width = 65 if label in {"Issue", "Suggestion", "Coverage"} else 52
-            if label in {"Check", "Flag", "Findings"}:
+            if label in {"Flag", "Findings"}:
                 width = 18
             sheet.column_dimensions[col[0].column_letter].width = width
     wb.save(output)
@@ -132,6 +138,8 @@ def build(data, output):
     expected = ["Overview"] + [spec[1] for key, spec in SPECS.items() if rows[key]]
     if verified.sheetnames != expected:
         raise RuntimeError("Workbook sheet verification failed")
+    if [verified["Overview"].cell(i, 1).value for i in range(2, 5)] != [f"{check} {name}" for check, name in CHECK_NAMES.items()]:
+        raise RuntimeError("Workbook check name verification failed")
     for key, (_, title, headers, fields) in SPECS.items():
         if not rows[key]:
             continue

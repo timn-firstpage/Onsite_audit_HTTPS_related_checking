@@ -6,6 +6,8 @@
 
 ## 输出
 
+Overview 的 **Check** 列必须包含编号和 item name：`9.1 HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content`、`9.2 Mixed Content`、`9.3 WWW vs non-WWW`，不能只显示编号；名称与编号放在同一列。
+
 Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，发现问题显示 **X**；待确认或未检测显示 **Human Check**；已有问题同时有证据缺口显示 **X + Human Check**，不冒充通过。没有致命网络中断时，证据不足仍输出最终 Excel，在 Issue／Suggestion 写清缺口与人工核查动作。发现任何内部 HTTP URL 就 X（即使已转 HTTPS）；Mixed Content 检测完成后零条目 √，有条目 X。空/NaN/NA 若代表缺失资料，不能自动给 √。
 
 文件名固定为 **`{site name}_https_audit_{date}.xlsx`**，日期格式 YYYY-MM-DD，例如 `Example_https_audit_2026-10-05.xlsx`。site name 从本次配置/用户提供的名称读取；缺失时使用不带 www 的站点 hostname。日期按用户时区解析或使用指定 audit_date，不由 Mac/Windows 系统日期擅自决定。同日重复运行使用不同 run 目录，不自动加后缀或覆盖旧报告。

@@ -63,6 +63,8 @@ hostname 行键：test_url, expected_url, issue, issue_description, suggestion�
 issue 是内部分类/去重代码；issue_description 是 Excel Issue 列的可读事实描述，suggestion 是独立 Suggestion 列的修复动作。旧 findings.json 缺少 issue_description 时须根据证据补写，将原组合文本拆分；生成器不猜测如何拆句。
 不确定行用 issue 前缀 `human-check:`（兼容旧 `review:`）；在 issue_description 写明尚未验证的部分，suggestion 写具体核验动作。有确定问题且同时有未完成检测时总览写 Issue，Flag 显示 X + Human Check，保留独立 Human Check 行，coverage 包含未完成范围。没有确认问题但证据缺失时写 Human Check，不能为了导出而改成 Pass／Issue。没有致命网络中断时，即使全部缺证据也输出最终 Excel；生成器会为无明细的 Human Check 自动生成基于 Coverage 的人工核查行。实际受影响 URL 未提供时显示 Not supplied，不猜 URL。
 
+overview.check 在内部 JSON 中保留 9.1／9.2／9.3 编号；生成器自动在 Excel Check 列附上固定 item name，不需要 agent 额外填写名称。
+
 此 JSON 是 agent 判断后的结果，不是把原始 SF CSV 直接改名；build_report.py 只验证并渲染，不自动执行 MCP/crawl/网络检查。
 
 共享 skill 的 sf-handover.json 只记录配置/用户确认/文件交接，不是 findings.json，也不能直接传给报表生成器。各检查的证据完整性仍由本 skill 按实际文件验证。
