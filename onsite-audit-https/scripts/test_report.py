@@ -11,7 +11,7 @@ def fixture():
         {"check": "9.1", "result": "Issue", "coverage": "Synthetic HTTP evidence"},
         {"check": "9.2", "result": "Not Tested", "coverage": "No mixed export"},
         {"check": "9.3", "result": "Needs Review", "coverage": "Synthetic timeout"}],
-        "http": [{"address": "http://example.com/a/?x=1&y=2", "issue": "http-200", "suggestion": "=untrusted text"}],
+        "http": [{"address": "http://example.com/a/?x=1&y=2", "issue": "http-200", "issue_description": "HTTP page returns 200", "suggestion": "=untrusted text"}],
         "mixed": [], "hostname": []}
 
 
@@ -35,7 +35,9 @@ class ReportTests(unittest.TestCase):
             wb = load_workbook(output)
             self.assertEqual(wb.sheetnames, ["Overview", "9.1 HTTPS VS HTTP"])
             self.assertEqual(wb.worksheets[1]["A2"].value, data["http"][0]["address"])
-            self.assertEqual(wb.worksheets[1]["B2"].data_type, "s")
+            self.assertEqual(wb.worksheets[1]["B2"].value, "HTTP page returns 200")
+            self.assertEqual(wb.worksheets[1]["C2"].value, "=untrusted text")
+            self.assertEqual(wb.worksheets[1]["C2"].data_type, "s")
             self.assertEqual(wb["Overview"]["B4"].value, "Needs Review")
             self.assertEqual(wb["Overview"]["B2"].value, "X")
             wb.close()
@@ -55,7 +57,7 @@ class ReportTests(unittest.TestCase):
     def test_retains_shared_resource_on_different_pages(self):
         data = fixture()
         data["overview"][1]["result"] = "Issue"
-        data["mixed"] = [{"page_address": page, "resource_url": "http://example.com/logo.png", "issue": "mixed", "suggestion": "Update image reference"} for page in ["https://example.com/a", "https://example.com/b"]]
+        data["mixed"] = [{"page_address": page, "resource_url": "http://example.com/logo.png", "issue": "mixed", "issue_description": "HTTPS page loads an HTTP image", "suggestion": "Update image reference"} for page in ["https://example.com/a", "https://example.com/b"]]
         _, rows = normalize(data)
         self.assertEqual(len(rows["mixed"]), 2)
 

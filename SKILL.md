@@ -44,15 +44,15 @@ Create detail sheets only for findings or unresolved checks. Export no passing U
 
 | Sheet | Exact columns |
 | --- | --- |
-| 9.1 HTTPS VS HTTP | Address; Issue / Suggestion |
-| 9.2 HTTPS Mixed Content | Page Address; HTTP Resource URL; Issue / Suggestion |
-| 9.3 WWW VS NON-WWW | Test URL; Expected URL; Issue / Suggestion |
+| 9.1 HTTPS VS HTTP | Address; Issue; Suggestion |
+| 9.2 HTTPS Mixed Content | Page Address; HTTP Resource URL; Issue; Suggestion |
+| 9.3 WWW VS NON-WWW | Test URL; Expected URL; Issue; Suggestion |
 
 Keep an Overview with Check, Flag, Findings, Coverage. Internal results remain Pass, Issue, Needs Review, Not Tested; render Pass as √ and Issue as X. Keep Needs Review/Not Tested explicit. Pass means no findings within the stated tested scope; empty or incomplete inputs are not a pass.
 
 Coverage describes tested URL/page counts, full versus sampled scope, and unverified portions only. Keep skill updates, tool installation and runtime setup messages in handover/logs, never in customer-facing Coverage.
 
-Combine evidence and action in one or two sentences, e.g. `non-www 服务内页跳到了 www 首页，内容不对应；请改为该服务对应的 www 页面。` Put status codes, source references or resource types in this text only when useful. Do not generate generic recommendations for every row.
+Keep observed evidence and the action in separate columns. Issue describes the actual problem, e.g. `non-www 服务内页跳到了 www 首页，内容不对应。`; Suggestion gives the specific fix, e.g. `请改为该服务对应的 www 页面。` Use one or two short sentences each. Put status codes, source references or resource types in Issue only when useful. Do not export internal issue codes as the customer-facing description or generate generic recommendations for every row.
 
 Deduplicate HTTP rows by URL + issue, mixed content by page + resource + issue, hostname rows by test URL + issue. Preserve each affected page for a shared resource. Use [scripts/build_report.py](onsite-audit-https/scripts/build_report.py) for a new workbook from normalized findings; use an available spreadsheet tool to preserve an existing workbook when updating one.
 

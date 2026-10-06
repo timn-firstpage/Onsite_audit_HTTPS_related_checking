@@ -12,9 +12,9 @@ Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，�
 
 | Sheet | Columns |
 | --- | --- |
-| 9.1 HTTPS VS HTTP | Address · Issue / Suggestion |
-| 9.2 HTTPS Mixed Content | Page Address · HTTP Resource URL · Issue / Suggestion |
-| 9.3 WWW VS NON-WWW | Test URL · Expected URL · Issue / Suggestion |
+| 9.1 HTTPS VS HTTP | Address · Issue · Suggestion |
+| 9.2 HTTPS Mixed Content | Page Address · HTTP Resource URL · Issue · Suggestion |
+| 9.3 WWW VS NON-WWW | Test URL · Expected URL · Issue · Suggestion |
 
 只输出问题或待确认行，不建空明细 sheet。Overview 保留结果、数量和范围，区分 Pass / Issue / Needs Review / Not Tested。建议根据实际响应生成，不机械重复 “change to HTTPS”。www/non-www 的目标由 preferred_origin 配置；本次 www 审核只要 non-www 能跳到有效、内容对应的 www 页面就通过。路径变化、多次跳转或状态码类型本身不作为该项问题；内容无法确认时标记 Needs Review。HTTP/HTTPS 的安全问题由其他检查处理。
 

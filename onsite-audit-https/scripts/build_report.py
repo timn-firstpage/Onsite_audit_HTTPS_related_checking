@@ -6,9 +6,9 @@ from datetime import date
 from pathlib import Path
 
 SPECS = {
-    "http": ("9.1", "9.1 HTTPS VS HTTP", ["Address", "Issue / Suggestion"], ["address", "suggestion"]),
-    "mixed": ("9.2", "9.2 HTTPS Mixed Content", ["Page Address", "HTTP Resource URL", "Issue / Suggestion"], ["page_address", "resource_url", "suggestion"]),
-    "hostname": ("9.3", "9.3 WWW VS NON-WWW", ["Test URL", "Expected URL", "Issue / Suggestion"], ["test_url", "expected_url", "suggestion"]),
+    "http": ("9.1", "9.1 HTTPS VS HTTP", ["Address", "Issue", "Suggestion"], ["address", "issue_description", "suggestion"]),
+    "mixed": ("9.2", "9.2 HTTPS Mixed Content", ["Page Address", "HTTP Resource URL", "Issue", "Suggestion"], ["page_address", "resource_url", "issue_description", "suggestion"]),
+    "hostname": ("9.3", "9.3 WWW VS NON-WWW", ["Test URL", "Expected URL", "Issue", "Suggestion"], ["test_url", "expected_url", "issue_description", "suggestion"]),
 }
 
 
@@ -37,7 +37,7 @@ def normalize(data):
             required = fields + ["issue"]
             if any(not isinstance(row.get(f), str) or not row[f].strip() for f in required):
                 raise ValueError(f"{key}: missing/non-string {required}")
-            identity = tuple(row[f] for f in fields[:-1]) + (row["issue"],)
+            identity = tuple(row[f] for f in fields[:-2]) + (row["issue"],)
             if identity in unique and unique[identity] != row:
                 raise ValueError(f"{key}: conflicting duplicate {identity}")
             unique[identity] = row
@@ -98,7 +98,7 @@ def build(data, output):
                 cell.alignment = Alignment(vertical="top", wrap_text=True)
         for col in sheet.columns:
             label = col[0].value
-            width = 78 if label in {"Issue / Suggestion", "Coverage"} else 52
+            width = 65 if label in {"Issue", "Suggestion", "Coverage"} else 52
             if label in {"Check", "Flag", "Findings"}:
                 width = 18
             sheet.column_dimensions[col[0].column_letter].width = width

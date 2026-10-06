@@ -48,17 +48,18 @@ run_id 用安全的站点标识与时间/随机后缀生成，不覆盖旧 run�
     {"check":"9.3","result":"Not Tested","coverage":"尚未配置 preferred origin"}
   ],
   "http": [
-    {"address":"http://example.com/a/","issue":"http-200","suggestion":"HTTP 页面返回 200；已验证对应 HTTPS 页面，请配置永久重定向。"}
+    {"address":"http://example.com/a/","issue":"http-200","issue_description":"HTTP 页面返回 200。","suggestion":"已验证对应 HTTPS 页面，请配置永久重定向。"}
   ],
   "mixed": [],
   "hostname": []
 }
 ```
 
-http 行键：address, issue, suggestion。
-mixed 行键：page_address, resource_url, issue, suggestion。
-hostname 行键：test_url, expected_url, issue, suggestion。
-不确定行用 issue 前缀 `review:`；必须在 suggestion 中写明尚未验证的部分。有确定问题且同时有未完成检测时总览可写 Issue，但 coverage 必须包含未完成范围。
+http 行键：address, issue, issue_description, suggestion。
+mixed 行键：page_address, resource_url, issue, issue_description, suggestion。
+hostname 行键：test_url, expected_url, issue, issue_description, suggestion。
+issue 是内部分类/去重代码；issue_description 是 Excel Issue 列的可读事实描述，suggestion 是独立 Suggestion 列的修复动作。旧 findings.json 缺少 issue_description 时须根据证据补写，将原组合文本拆分；生成器不猜测如何拆句。
+不确定行用 issue 前缀 `review:`；在 issue_description 写明尚未验证的部分，suggestion 写具体核验动作。有确定问题且同时有未完成检测时总览可写 Issue，但 coverage 必须包含未完成范围。
 
 此 JSON 是 agent 判断后的结果，不是把原始 SF CSV 直接改名；build_report.py 只验证并渲染，不自动执行 MCP/crawl/网络检查。
 
