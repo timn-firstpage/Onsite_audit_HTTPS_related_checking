@@ -18,6 +18,20 @@ Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，�
 
 只输出确认问题或 Human Check 行，不建空明细 sheet。Overview 保留结果、数量和范围。www/non-www 默认用 Python 检查实际首页两个版本，以及主 crawl 中已经出现的内页配对；不预设 www 为首选，不为全部内页生成四版本。两个独立地址提供相同内容且没有统一重定向时，Issue 列出两个 URL 及证据，Suggestion 写选定首选地址后的合并动作。内容不同则说明域名／路由不一致，不冒称重复。没有致命网络中断时，证据不足照样交付最终文件并标 Human Check，不能声称两个 URL 已排名或排名被蚕食。HTTP／Mixed Content 仍独立基于主 crawl 检查。
 
+## 9.1–9.3 逐项检查逻辑
+
+本 skill 检查 HTTP URLs、Mixed Content 和 www/non-www；SF 配置、crawl 与运行环境可与 robots 检查共用。每项按实际证据独立判断，报告使用 **√ / X / Human Check**。
+
+| Item | 怎么检查 | 结果判断 |
+| --- | --- | --- |
+| **9.1 HTTP vs HTTPS：是否发现内部 HTTP URL？** | 读取 **Security → HTTP URLs**，有结果时导出 **HTTP URLs Inlinks**，保留 HTTP 地址和引用页面。检查状态码、重定向链、最终 HTTPS 地址及对应内容；提出替换引用或修复跳转建议前，验证 HTTPS 目标是否可用。普通 HTTP 超链接不等于 Mixed Content。 | **√：**完整检测确认零内部 HTTP URL。**X：**发现任何内部 HTTP URL，即使已经正确跳到 HTTPS；正确跳转的地址建议更新引用，其他地址按实际响应说明问题与动作。**Human Check：**导出缺失／截断、范围不明确或所需证据不足；确认已有 HTTP 问题且同时有缺口时显示 **X + Human Check**。 |
+| **9.2 Mixed Content：HTTPS 页面是否引用 HTTP 资源？** | 读取 **Security → Mixed Content** 及对应 bulk export，保留「HTTPS 页面 + HTTP 资源」配对和资源类型。验证资源的 HTTPS 版本是否可用且对应原资源；同一资源只验证一次，但保留所有受影响页面。需要时补充 JavaScript 渲染证据。 | **√：**完整检测确认零 Mixed Content 条目。**X：**存在已确认条目，即使该资源的 HTTPS 版本可用；按验证结果建议更新引用、修复或替换资源。**Human Check：**缺少 page/resource 配对、渲染覆盖或资源验证证据。空／NaN／NA 只有在确认完整导出为零结果时才可判 √，不能把缺资料当通过；已有问题与缺口并存显示 **X + Human Check**。 |
+| **9.3 WWW vs non-WWW：是否统一到对应 HTTPS 页面？** | 当前默认用 Python 检查实际 HTTPS 首页的两个版本，以及主 crawl 中两侧都已出现的内页配对；配对须只相差 leading `www.`，path／query 相同。记录每一跳、最终地址和主体内容，核对页面用途，排除软 404、验证码及错误跳到首页。默认检查全部已观察 pairs，明确配置正整数才限制数量；不预设 www 为首选。 | **√：**已检查范围内，两侧统一到同一可用 HTTPS 页面，内容对应原页面且符合明确指定的首选 origin。**X：**跳错内容／host、内页跳到首页、确认循环，或两个有效地址未统一；相同内容写未合并问题，不同内容写域名／路由不一致。合法路径变化、多跳或临时跳转本身不单独判 X。**Human Check：**403／429、hop／预算上限、主体内容不足或动态内容无法确认；title／H1 相同或返回 200 不能独立证明通过。 |
+
+**Coverage：**按页面和测试 URL 分别记录候选数量、实际完成数量、未检查数量及原因。9.3 当前范围是“首页 + 已观察 pairs”，未配对内页不在此范围内；首页通过不能代表全部内页通过。只查已观察 pairs 与“从全部 HTML 页面生成四版本，再跑 SF List Mode”是不同范围，后者目前尚未实现为默认流程。
+
+**网络中断：**live 检查或 MCP 发生连接失败、超时、DNS/TLS 连接失败、断连或响应读取中断时，立即报错并停止整个审核，保存失败标记、错误日志与用量；要求用户检查连接后在新 run 目录重新运行整个 skill。不自动重试／续跑，不生成或交付本次最终 Excel。已收到的 HTTP 403／429 响应、普通证据缺口及预算上限仍按 Human Check 处理。
+
 ## 文件导航
 
 - [SKILL.md](onsite-audit-https/SKILL.md)：短入口，按需加载参考资料。
