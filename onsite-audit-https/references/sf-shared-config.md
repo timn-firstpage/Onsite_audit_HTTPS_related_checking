@@ -16,6 +16,8 @@ Resolve profiles from the installed shared skill on the SF host, rather than fro
 
 Config-load failure immediately switches to manual guidance, preserving the original error. Unsupported native control is not a reason to block data reuse. `sf_crawl(config_path=...)` starts a crawl and is not a standalone loader. The user confirms site/scope/sitemap, manually starts and supervises the crawl, then saves to their actual Downloads folder and supplies the path. Neither allow_new_crawl nor allow_hostname_list_crawl changes that division of responsibility.
 
+Before manual Load guidance, shared preparation saves the selected .seospiderconfig to the user's actual Downloads on the SF host and verifies readability, nonzero size and source/copy equality. Provide that path for Load, then sitemap confirmation. Reuse identical copies and preserve different existing files. If host access prevents saving, give the download/copy-to-Downloads step first and disclose that delivery is unverified; do not claim a file was saved. Already suitable evidence or a reliably unchanged loaded profile skips this step. The configuration is distinct from the later .seospider crawl result.
+
 For a hostname follow-up, supply the complete URL list, require List Mode and Always Follow Redirects, and retain the original security crawl. Do not require another whole-site sitemap crawl for a four-variant test. Main does not store whole-page HTML; title/H1/identifiers may suffice, otherwise request targeted content evidence. CSS/JS resource coverage must be established from actual exports, not inferred from the profile name.
 
 ## Validate the handover

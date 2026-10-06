@@ -117,6 +117,8 @@ export SCREAMING_FROG_MCP_URL
 
 调用返回后仍检查实际数据；sf-handover.json 是交接记录，不是审核通过证明。429 区分网站与 MCP 来源，缺失数据不当作零问题。详见 [完整前提及交接边界](onsite-audit-https/references/sf-shared-config.md)。
 
+需要你手动 Load 时，Agent 先将选定 `.seospiderconfig` 保存到 SF 电脑的实际 Downloads 并验证，再给该路径让你加载和检查 sitemap。同名不同内容不覆盖；无法访问该电脑／目录时先给下载或复制步骤并说明未完成保存。该配置文件不是稍后保存的 `.seospider` 爬取结果。
+
 www/non-www 默认由 Screaming Frog 检查现有 crawl 中全部符合范围的 HTML 页面，`hostname_page_limit: null` 不设采样页数上限；Python 只准备列表、分析完整导出及生成 Excel。启用 SF List Mode 的 Always Follow Redirects 并导出 All Redirects，再核对最终页内容。只有主动设置 `hostname_page_limit: 20` 才抽样 20 页（最多 80 个测试起点）。[批量检测操作与 MCP 限制](onsite-audit-https/references/hostname-sampling.md)。
 
 旧 run/config.json 中若仍写着 20，需要改成 null；更新 skill 不会覆写旧 run 配置。新模板已默认 null。`allow_hostname_list_crawl` 控制是否可请求本项的定向 List 补爬；`source.allow_new_crawl` 控制是否可请求一般全站补爬。两者都由用户手动 Start，不能作为 agent 自动启动许可；为 false 时说明未完成范围。已有四版本结果适用则无需补爬。
