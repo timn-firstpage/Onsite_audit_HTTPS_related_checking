@@ -4,6 +4,8 @@ The independent [sf-shared-config skill](https://github.com/timn-firstpage/On-_s
 
 ## Route before requesting a crawl
 
+Supplied `.seospider` files use the common [saved-crawl entry contract](https://github.com/timn-firstpage/On-_site_SF_shared_config/blob/main/references/saved-crawl-entry.md), preferably its local shared-skill copy. Set source.mode=saved_crawl and source.crawl_file (relative to the config directory); these fields are agent-owned, not consumed by the hostname collector. Explicit input wins over stale session IDs. Preflight file/output/runtime once, reuse matching exports or open once with a supported reader, and share fingerprint/export records across callers. Preserve active sessions/original files; no generic profile loading, new-crawl sitemap confirmation or Start. Unsupported/rejected imports get manual saved-crawl **Open + exports**, not config Load + Start. Annotate historical versus live evidence. HTTPS's fatal transport-interruption rule overrides shared read-retry guidance.
+
 | Available evidence | HTTPS action |
 | --- | --- |
 | Suitable crawl or exports | Verify site, date, scope, completion and required fields; reuse directly. No profile load or exhaustive historical settings check. |

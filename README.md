@@ -6,6 +6,8 @@
 
 ## 输出
 
+**支持直接提供已爬好的 `.seospider` 文件**：使用 `source.mode=saved_crawl` 和 `source.crawl_file`，或直接提供文件让 agent 解析路径。复用匹配导出，必要时通过 SF 支持的功能打开一次，与其他 onsite audits 共用结果；不重载 global config、不自动重爬。没有 reader 时只要求用户打开已有 crawl 并导出指定结果。`.seospiderconfig` 是配置文件，不是 crawl。详见 [共用 saved-crawl 操作与报错说明](https://github.com/timn-firstpage/On-_site_SF_shared_config/blob/main/references/saved-crawl-entry.md)。HTTPS 原有“网络中断终止整次审计”规则保持不变。
+
 Overview 的 **Check** 列必须包含编号和 item name：`9.1 HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content`、`9.2 Mixed Content`、`9.3 WWW vs non-WWW`，不能只显示编号；名称与编号放在同一列。
 
 Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，发现问题显示 **X**；待确认或未检测显示 **Human Check**；已有问题同时有证据缺口显示 **X + Human Check**，不冒充通过。没有致命网络中断时，证据不足仍输出最终 Excel，在 Issue／Suggestion 写清缺口与人工核查动作。发现任何内部 HTTP URL 就 X（即使已转 HTTPS）；Mixed Content 检测完成后零条目 √，有条目 X。空/NaN/NA 若代表缺失资料，不能自动给 √。

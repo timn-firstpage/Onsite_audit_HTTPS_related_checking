@@ -9,6 +9,8 @@ Produce evidence-based HTTPS findings in a compact Excel workbook. Match the use
 
 ## Start
 
+- Accept a supplied `.seospider` as source.mode=saved_crawl and source.crawl_file. Follow the saved-crawl route in [shared preparation](references/sf-shared-config.md): preflight file/output runtime, reuse matching exports or open once with verified SF capabilities, and share source/export records across onsite flows. Skip profile loading and new-crawl sitemap confirmation; allow_new_crawl=false still permits saved-file analysis. No reader/import rejection gets manual saved-crawl Open + required exports, never automatic recrawling. Preserve active/unsaved sessions and original files. HTTPS fatal network interruption rules remain authoritative.
+
 - Before requesting new SF evidence, follow [the shared configuration prerequisite](references/sf-shared-config.md). Reuse suitable existing data without reloading configuration. Otherwise delegate preparation to `sf-shared-config`; the user confirms sitemap, runs in UI and saves the files. Never use a crawl-start operation as a config loader or automatically start a general/List crawl. A failed native load immediately receives manual Load + sitemap guidance, not a pending audit caused by unavailable native control.
 - Use the actual supplied site/crawl and explicit preferred HTTPS origin when given. Otherwise infer the selected hostname from observed redirect convergence, using canonical/sitemap hosts as context; never assume www is preferable. Inconsistent redirect selection is Human Check; canonical/sitemap disagreement alone is not an extra 9.3 failure gate.
 - Read [config.template.json](config.template.json) for run inputs. Save resolved settings in a unique local run directory.
