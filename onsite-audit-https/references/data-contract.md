@@ -59,16 +59,16 @@ run_id 用安全的站点标识与时间/随机后缀生成，不覆盖旧 run�
 }
 ```
 
-Overview 必须提供文字 findings 与 instructions，不能写数字计数；旧 coverage 不再必需也不输出，旧输入需根据实际证据补写两句简短文字。范围／数量保留在 manifest/handover。
+Checklist 必须提供文字 findings 与 instructions，不能写数字计数；旧 coverage 不再必需也不输出，旧输入需根据实际证据补写两句简短文字。范围／数量保留在 manifest/handover。
 
 http 行键：address, issue, issue_description, suggestion；可选 related_url 保留有证据的引用页面或目标 URL。
 mixed 行键：page_address, resource_url, issue, issue_description, suggestion。
 hostname 行键：test_url, expected_url, issue, issue_description, suggestion。
 issue 是内部分类/去重代码；issue_description 映射为 Findings，suggestion 映射为 Instructions。每项一句简单的话；Instructions 直接说明人要做的事，无问题写「无需处理」。生成器自动加 Issue Type，并将三类合并到 `9. Implement HTTPS Protocol`。
 
-只有具体未解决的检查才用 issue 前缀 `human-check:`（兼容 `review:`）。有确认问题及此类行时 Overview 写 Issue，显示 X + Human Check。仅有具体未解决行时写 Human Check。无具体行的 Human Check 输入会被拒绝，生成器不再自动添加占位行。9.1/9.2 样本内零记录写 Pass、空数组；不因没有全站覆盖证明而补查。已提供的问题行缺字段仍需说明，不能删行伪造零问题。文件无法读取／解析则报错；网络中断遵循整次失败重跑规则。
+只有具体未解决的检查才用 issue 前缀 `human-check:`（兼容 `review:`）。有确认问题及此类行时 Checklist 写 Issue，显示 X + Human Check。仅有具体未解决行时写 Human Check。无具体行的 Human Check 输入会被拒绝，生成器不再自动添加占位行。9.1/9.2 样本内零记录写 Pass、空数组；不因没有全站覆盖证明而补查。已提供的问题行缺字段仍需说明，不能删行伪造零问题。文件无法读取／解析则报错；网络中断遵循整次失败重跑规则。
 
-overview.check 在内部 JSON 中保留 9.1／9.2／9.3 编号；生成器自动在 Excel Check 列附上固定 item name，不需要 agent 额外填写名称。
+overview.check 在内部 JSON 中保留 9.1／9.2／9.3 编号；生成器将编号和固定名称分别写入 Item No. 与 Item Name；结果写入 Initial Check。
 
 此 JSON 是 agent 判断后的结果，不是把原始 SF CSV 直接改名；build_report.py 只验证并渲染，不自动执行 MCP/crawl/网络检查。
 

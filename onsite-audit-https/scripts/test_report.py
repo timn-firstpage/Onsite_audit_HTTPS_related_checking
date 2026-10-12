@@ -33,16 +33,17 @@ class ReportTests(unittest.TestCase):
             result = build(data, output)
             self.assertEqual(result["findings"]["http"], 1)
             wb = load_workbook(output)
-            self.assertEqual(wb.sheetnames, ["Overview", "9. Implement HTTPS Protocol"])
+            self.assertEqual(wb.sheetnames, ["Checklist", "9. Implement HTTPS Protocol"])
             self.assertEqual(wb.worksheets[1]["B2"].value, data["http"][0]["address"])
             self.assertEqual(wb.worksheets[1]["D2"].value, "HTTP page returns 200")
             self.assertEqual(wb.worksheets[1]["E2"].value, "=untrusted text")
             self.assertEqual(wb.worksheets[1]["E2"].data_type, "s")
-            self.assertEqual(wb["Overview"]["B4"].value, "Human Check")
-            self.assertEqual(wb["Overview"]["B2"].value, "X")
-            self.assertEqual([wb["Overview"].cell(i, 1).value for i in range(2, 5)], [
-                "9.1 HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content",
-                "9.2 Mixed Content", "9.3 WWW vs non-WWW"])
+            self.assertEqual(wb["Checklist"]["C4"].value, "Human Check")
+            self.assertEqual(wb["Checklist"]["C2"].value, "X")
+            self.assertEqual([wb["Checklist"].cell(i, 1).value for i in range(2, 5)], ["9.1", "9.2", "9.3"])
+            self.assertEqual([wb["Checklist"].cell(i, 2).value for i in range(2, 5)], [
+                "HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content",
+                "Mixed Content", "WWW vs non-WWW"])
             wb.close()
             with self.assertRaises(FileExistsError):
                 build(data, output)
@@ -71,9 +72,9 @@ class ReportTests(unittest.TestCase):
             output = Path(directory) / "audit.xlsx"
             build(data, output)
             wb = load_workbook(output)
-            self.assertEqual(wb["Overview"]["B3"].value, "√")
-            self.assertEqual(wb["Overview"]["B4"].value, "Human Check")
-            self.assertEqual(wb["Overview"]["B2"].value, "X")
+            self.assertEqual(wb["Checklist"]["C3"].value, "√")
+            self.assertEqual(wb["Checklist"]["C4"].value, "Human Check")
+            self.assertEqual(wb["Checklist"]["C2"].value, "X")
             wb.close()
 
     def test_partial_defect_keeps_x_and_exports_human_check(self):
@@ -83,7 +84,7 @@ class ReportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
             build(data,Path(directory)/'audit.xlsx')
             wb=load_workbook(Path(directory)/'audit.xlsx')
-            self.assertEqual(wb['Overview']['B2'].value,'X + Human Check')
+            self.assertEqual(wb['Checklist']['C2'].value,'X + Human Check')
             self.assertTrue(wb['9. Implement HTTPS Protocol']['D3'].value.startswith('Human Check'))
             self.assertEqual(wb['9. Implement HTTPS Protocol']['E3'].value,'Manually inspect redirect and destination.')
             self.assertTrue(wb['9. Implement HTTPS Protocol']['D4'].value.startswith('Human Check'))
@@ -98,12 +99,12 @@ class ReportTests(unittest.TestCase):
             output = Path(directory) / "audit.xlsx"
             build(data, output)
             wb = load_workbook(output)
-            self.assertEqual(wb.sheetnames, ["Overview", "9. Implement HTTPS Protocol"])
-            self.assertEqual([c.value for c in wb['Overview'][1]], ["Check", "Flag", "Findings", "Instructions"])
+            self.assertEqual(wb.sheetnames, ["Checklist", "9. Implement HTTPS Protocol"])
+            self.assertEqual([c.value for c in wb['Checklist'][1]], ["Item No.", "Item Name", "Initial Check", "Findings", "Instruction"])
             self.assertEqual([c.value for c in wb.worksheets[1][1]], ["Issue Type", "Address", "Related URL", "Findings", "Instructions"])
             self.assertEqual(wb.worksheets[1].max_row, 1)
-            self.assertTrue(all(wb['Overview'].cell(i, 2).value == "√" for i in range(2, 5)))
-            self.assertEqual(wb['Overview']['C2'].value, data['overview'][0]['findings'])
+            self.assertTrue(all(wb['Checklist'].cell(i, 3).value == "√" for i in range(2, 5)))
+            self.assertEqual(wb['Checklist']['D2'].value, data['overview'][0]['findings'])
             wb.close()
 
     def test_no_invented_human_check_or_numeric_findings(self):

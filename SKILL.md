@@ -50,12 +50,12 @@ Always create exactly two sheets, including a header-only detail sheet when ther
 
 | Sheet | Exact columns |
 | --- | --- |
-| Overview | Check; Flag; Findings; Instructions |
+| Checklist | Item No.; Item Name; Initial Check; Findings; Instruction |
 | 9. Implement HTTPS Protocol | Issue Type; Address; Related URL; Findings; Instructions |
 
-Overview includes all three item numbers and full names from the report script. Detail Issue Type is `9.1 HTTPS vs HTTP`, `9.2 Mixed Content` or `9.3 WWW vs non-WWW`. Address means HTTP URL / HTTPS page / tested hostname URL respectively. Related URL means an optional evidenced HTTP reference/target / HTTP resource / expected hostname target respectively. Preserve the exact URL pairs; explain the relationship briefly if needed. Export only issues and specific unresolved checks in the detail sheet, never passing URL rows.
+Checklist separates all three item numbers and full names into Item No. and Item Name. Detail Issue Type is `9.1 HTTPS vs HTTP`, `9.2 Mixed Content` or `9.3 WWW vs non-WWW`. Address means HTTP URL / HTTPS page / tested hostname URL respectively. Related URL means an optional evidenced HTTP reference/target / HTTP resource / expected hostname target respectively. Preserve the exact URL pairs; explain the relationship briefly if needed. Export only issues and specific unresolved checks in the detail sheet, never passing URL rows.
 
-Findings is a short factual sentence, never a bare count or internal code. Instructions is the next action a person should take: one short sentence with a direct verb, no complex terminology, internal tool steps or generic advice. For Pass use "无需处理。" (or the report-language equivalent). Example: Findings="HTTPS 页面引用了 HTTP 图片。"; Instructions="把图片链接改为已验证可用的 HTTPS 地址。" Do not suggest an unverified replacement as if tested. For Overview, summarize the actual issue and next action; details stay beside the affected URLs. Match the user's language.
+Findings is a short factual sentence, never a bare count or internal code. Instructions is the next action a person should take: one short sentence with a direct verb, no complex terminology, internal tool steps or generic advice. For Pass use "无需处理。" (or the report-language equivalent). Example: Findings="HTTPS 页面引用了 HTTP 图片。"; Instructions="把图片链接改为已验证可用的 HTTPS 地址。" Do not suggest an unverified replacement as if tested. For Checklist, summarize the actual issue and next action; details stay beside the affected URLs. Match the user's language.
 
 Never use Yes/No flags. Render Pass as √, Issue as X, Human Check as Human Check; confirmed defects plus specific unresolved rows render X + Human Check. Human Check requires an explicit evidence row and concrete action. Never generate placeholder gaps from absent Coverage or full-site uncertainty. There is no Coverage column; keep counts and scope in manifest/handover. Legacy overview JSON must be updated with sentence-valued findings and instructions; row issue_description/suggestion remain internal keys mapped to Findings/Instructions. The generator does not infer verdicts from raw SF data.
 

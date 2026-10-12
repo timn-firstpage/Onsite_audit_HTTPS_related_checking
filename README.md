@@ -8,15 +8,15 @@
 
 **支持直接提供已爬好的 `.seospider` 文件**：使用 `source.mode=saved_crawl` 和 `source.crawl_file`，或直接提供文件让 agent 解析路径。复用匹配导出，必要时通过 SF 支持的功能打开一次，与其他 onsite audits 共用结果；不重载 global config、不自动重爬。没有 reader 时只要求用户打开已有 crawl 并导出指定结果。`.seospiderconfig` 是配置文件，不是 crawl。详见 [共用 saved-crawl 操作与报错说明](https://github.com/timn-firstpage/On-_site_SF_shared_config/blob/main/references/saved-crawl-entry.md)。HTTPS 原有“网络中断终止整次审计”规则保持不变。
 
-Overview 的 **Check** 列必须包含编号和 item name：`9.1 HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content`、`9.2 Mixed Content`、`9.3 WWW vs non-WWW`，不能只显示编号；名称与编号放在同一列。
+Checklist 的 **Check** 列必须包含编号和 item name：`9.1 HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content`、`9.2 Mixed Content`、`9.3 WWW vs non-WWW`，不能只显示编号；名称与编号放在同一列。
 
-Overview 使用 Check / Flag / Findings / Instructions。通过显示 **√**，发现问题显示 **X**，不使用 Yes/No。仅具体未解决的检查保留 Human Check；用户提供的样本内无 HTTP／Mixed Content 记录即 √。
+Checklist 使用 Item No. / Item Name / Initial Check / Findings / Instruction。通过显示 **√**，发现问题显示 **X**，不使用 Yes/No。仅具体未解决的检查保留 Human Check；用户提供的样本内无 HTTP／Mixed Content 记录即 √。
 
 文件名固定为 **`{site name}_https_audit_{date}.xlsx`**，日期格式 YYYY-MM-DD，例如 `Example_https_audit_2026-10-05.xlsx`。site name 从本次配置/用户提供的名称读取；缺失时使用不带 www 的站点 hostname。日期按用户时区解析或使用指定 audit_date，不由 Mac/Windows 系统日期擅自决定。同日重复运行使用不同 run 目录，不自动加后缀或覆盖旧报告。
 
 | Sheet | Columns |
 | --- | --- |
-| Overview | Check · Flag · Findings · Instructions |
+| Checklist | Item No. · Item Name · Initial Check · Findings · Instruction |
 | 9. Implement HTTPS Protocol | Issue Type · Address · Related URL · Findings · Instructions |
 
 9.1–9.3 合并在一个明细页，Issue Type 分别为 `9.1 HTTPS vs HTTP`、`9.2 Mixed Content`、`9.3 WWW vs non-WWW`。Address 放受影响 URL，Related URL 放引用／目标、HTTP 资源或预期地址。没有问题时保留空明细页的表头。

@@ -12,7 +12,7 @@ SPECS = {
 }
 DETAIL_SHEET = "9. Implement HTTPS Protocol"
 DETAIL_HEADERS = ["Issue Type", "Address", "Related URL", "Findings", "Instructions"]
-OVERVIEW_HEADERS = ["Check", "Flag", "Findings", "Instructions"]
+OVERVIEW_HEADERS = ["Item No.", "Item Name", "Initial Check", "Findings", "Instruction"]
 
 CHECK_NAMES = {
     "9.1": "HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content",
@@ -95,13 +95,13 @@ def build(data, output):
     output.parent.mkdir(parents=True, exist_ok=True)
     wb = Workbook()
     ws = wb.active
-    ws.title = "Overview"
+    ws.title = "Checklist"
     ws.append(OVERVIEW_HEADERS)
     for key, (check, *_rest) in SPECS.items():
         summary = next(r for r in overview if r["check"] == check)
         has_gaps = any(r["issue"].startswith(("review:", "human-check:")) for r in rows[key])
         flag = {"Pass": "√", "Issue": "X + Human Check" if has_gaps else "X", "Human Check": "Human Check"}[summary["result"]]
-        ws.append([f"{check} {CHECK_NAMES[check]}", flag, summary["findings"], summary["instructions"]])
+        ws.append([check, CHECK_NAMES[check], flag, summary["findings"], summary["instructions"]])
     sheet = wb.create_sheet(DETAIL_SHEET)
     sheet.append(DETAIL_HEADERS)
     detail_values = []
@@ -131,20 +131,22 @@ def build(data, output):
                 cell.alignment = Alignment(vertical="top", wrap_text=True)
         for col in sheet.columns:
             label = col[0].value
-            width = 60 if label in {"Findings", "Instructions"} else 48
+            width = 60 if label in {"Findings", "Instructions", "Instruction"} else 48
             if label == "Issue Type":
                 width = 28
-            if label == "Flag":
+            if label in {"Initial Check", "Item No."}:
                 width = 18
             sheet.column_dimensions[col[0].column_letter].width = width
     wb.save(output)
     verified = load_workbook(output)
-    expected = ["Overview", DETAIL_SHEET]
+    expected = ["Checklist", DETAIL_SHEET]
     if verified.sheetnames != expected:
         raise RuntimeError("Workbook sheet verification failed")
-    if [verified["Overview"].cell(i, 1).value for i in range(2, 5)] != [f"{check} {name}" for check, name in CHECK_NAMES.items()]:
+    if [verified["Checklist"].cell(i, 1).value for i in range(2, 5)] != list(CHECK_NAMES):
         raise RuntimeError("Workbook check name verification failed")
-    if [c.value for c in verified["Overview"][1]] != OVERVIEW_HEADERS:
+    if [verified["Checklist"].cell(i, 2).value for i in range(2, 5)] != list(CHECK_NAMES.values()):
+        raise RuntimeError("Workbook item name verification failed")
+    if [c.value for c in verified["Checklist"][1]] != OVERVIEW_HEADERS:
         raise RuntimeError("Overview header verification failed")
     sheet = verified[DETAIL_SHEET]
     if [c.value for c in sheet[1]] != DETAIL_HEADERS or sheet.max_row - 1 != len(detail_values):
