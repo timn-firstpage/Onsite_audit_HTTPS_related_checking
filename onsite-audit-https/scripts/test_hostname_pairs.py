@@ -32,6 +32,23 @@ class FakeOpener:
 
 
 class HostnameTests(unittest.TestCase):
+    def test_default_cli_only_checks_homepages_without_pages_file(self):
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            run = Path(directory)
+            config = run / 'config.json'
+            config.write_text(json.dumps({'site': {'start_url': 'https://example.org/deep'}}), encoding='utf-8')
+            opener = FakeOpener({'https://example.org/': {}, 'https://www.example.org/': {}})
+            with patch('check_hostname_pairs.build_opener', return_value=opener), patch('check_hostname_pairs.time.sleep') as sleep, patch('sys.argv',
+                    ['check_hostname_pairs.py', '--config', str(config), '--run-dir', str(run)]):
+                main()
+            result = json.loads((run / 'hostname-observations.json').read_text())
+            self.assertEqual(result['scope'], 'homepage')
+            self.assertEqual(len(result['pairs']), 1)
+            self.assertEqual(opener.calls, ['https://example.org/', 'https://www.example.org/'])
+            self.assertEqual(sleep.call_count, 1)
+            self.assertGreater(sleep.call_args.args[0], 2)
+            self.assertEqual(Checker(['example.org'], {}).delay, 3)
+
     def test_transport_failures_raise_immediately_without_retry(self):
         for error in [TimeoutError("timed out"), URLError("DNS failed"),
                       ConnectionResetError("connection reset"), IncompleteRead(b"partial", 100)]:
@@ -51,7 +68,7 @@ class HostnameTests(unittest.TestCase):
             run = Path(directory)
             config = run / 'config.json'
             pages = run / 'pages.json'
-            config.write_text(json.dumps({'site': {'start_url': 'https://example.org/'}}), encoding='utf-8')
+            config.write_text(json.dumps({'site': {'start_url': 'https://example.org/'}, 'checks': {'hostname_scope': 'observed_pairs'}}), encoding='utf-8')
             pages.write_text(json.dumps([{'url': u, 'content_type': 'text/html'} for u in
                                          ['https://example.org/a', 'https://www.example.org/a']]), encoding='utf-8')
             opener = FakeOpener({})

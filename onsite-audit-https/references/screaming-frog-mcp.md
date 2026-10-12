@@ -31,10 +31,10 @@ MCP 调用发生 timeout、断连／connection reset 或响应传输中断时，
 | --- | --- | --- |
 | 9.1 | Security HTTP URLs + HTTP URLs Inlinks | 先 issue 列表；有结果才导出引用详情 |
 | 9.2 | Security Mixed Content + 对应 bulk export | bulk 中要有 page/resource 配对，不只 HTML 页面列表 |
-| 9.3 | HTML 页面 URL/状态、canonical、相关内部链接与 sitemap URL | 先重用已有 export；只取所需字段，避免全站 HTML 内容 |
+| 9.3 | 两个 HTTPS 首页的响应与主体内容 | 默认 Python 慢速检查，无需额外 HTML URL／canonical／sitemap 导出 |
 | 细节补查 | 单个 URL 的 info/links | 只补缺失证据，不逐 URL 重拉已导出的资料 |
 
-9.3 hostname 验证以最终 host 和对应内容为准。优先复用页面 title/H1/实体标识，只在无法确定对应内容时获取少量主体片段。路径不同或多次跳转不产生问题行；没有内容证据不能只靠 URL/200 判 Pass。不要为这个检查额外全量拉取 canonical/links/sitemap 并把它们设为通过门槛。
+9.3 以两个正常首页的主体内容是否相同为准，不要求最终 URL 相同。优先复用页面 title/H1/实体标识，只在无法确定对应内容时获取少量主体片段。路径不同或多次跳转不产生问题行；没有内容证据不能只靠 URL/200 判 Pass。不要为这个检查额外全量拉取 canonical/links/sitemap 并把它们设为通过门槛。
 
 返回证据必须满足 [data-contract.md](data-contract.md)。工具原始返回不一定有 completeness/hash/count；在本地加工后补入 manifest，不能要求 API 返回其不支持的字段。
 
@@ -85,4 +85,4 @@ sf_url_info({"url": $oneUrl, "file_path": $relativeOutputPath})
 - 三个客户端各自 tools/list 成功。能打开 URL 不等于 MCP handshake 成功。
 - 本仓库不提供未验证的 stdio 启动参数；需要 stdio 时使用官方扩展/本机导出的设置。
 
-9.3 新默认 Python 首页／已观察 pair 检查，SF 仅按需补渲染证据。没有致命网络中断时，缺字段／预算／工具不可用时保留证据并输出最终 Excel，实际未解决项的 Findings 标 Human Check（样本内零 HTTP／Mixed Content 不适用），不等待全站补爬完成才交付。
+9.3 新默认 Python 两个 HTTPS 首页检查，SF 仅按需补渲染证据。没有致命网络中断时，缺字段／预算／工具不可用时保留证据并输出最终 Excel，实际未解决项的 Findings 标 Human Check（样本内零 HTTP／Mixed Content 不适用），不等待全站补爬完成才交付。

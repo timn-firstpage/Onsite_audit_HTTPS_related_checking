@@ -118,7 +118,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 class Checker:
     def __init__(self, allowed_hosts, usage, max_requests=200, max_hops=5, timeout=15,
-                 delay=1, opener=None, save_usage=None, stop_errors=2):
+                 delay=3, opener=None, save_usage=None, stop_errors=2):
         self.allowed = {h.lower() for h in allowed_hosts}
         self.usage, self.limit, self.max_hops = usage, max_requests, max_hops
         self.timeout, self.delay = timeout, delay
@@ -220,7 +220,7 @@ def compare(left, right):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", required=True, type=Path)
-    ap.add_argument("--pages", required=True, type=Path, help="Normalized JSON list: url, content_type")
+    ap.add_argument("--pages", type=Path, help="Optional HTML URL list for explicit observed_pairs scope")
     ap.add_argument("--run-dir", required=True, type=Path)
     args = ap.parse_args()
     cfg = json.loads(args.config.read_text(encoding="utf-8-sig"))
@@ -228,8 +228,14 @@ def main():
         raise ValueError("hostname_consistency is disabled")
     if cfg.get("checks", {}).get("hostname_executor", "python") != "python":
         raise ValueError("Selected executor is not python; honor the override or migrate the run config explicitly")
-    pages = json.loads(args.pages.read_text(encoding="utf-8-sig"))
-    pairs, omitted = build_pairs(cfg["site"]["start_url"], pages, cfg.get("checks", {}).get("hostname_page_limit"))
+    checks = cfg.get("checks", {})
+    scope = checks.get("hostname_scope", "homepage")
+    if scope not in {"homepage", "observed_pairs"}:
+        raise ValueError("hostname_scope must be homepage or observed_pairs")
+    if scope == "observed_pairs" and args.pages is None:
+        raise ValueError("observed_pairs scope requires --pages")
+    pages = json.loads(args.pages.read_text(encoding="utf-8-sig")) if scope == "observed_pairs" else []
+    pairs, omitted = build_pairs(cfg["site"]["start_url"], pages, checks.get("hostname_page_limit"))
     args.run_dir.mkdir(parents=True, exist_ok=True)
     output = args.run_dir / "hostname-observations.json"
     if output.exists():
@@ -244,7 +250,7 @@ def main():
     hosts = cfg["site"].get("allowed_hosts") or [base, "www." + base]
     budget = cfg.get("budget", {})
     checker = Checker(hosts, usage, budget.get("max_live_requests", 200), budget.get("max_redirect_hops", 5),
-                      budget.get("timeout_seconds", 15), save_usage=save,
+                      budget.get("timeout_seconds", 15), delay=checks.get("hostname_request_interval_seconds", 3), save_usage=save,
                       stop_errors=budget.get("stop_after_consecutive_errors", 2))
     records = []
     for pair in pairs:
@@ -270,7 +276,7 @@ def main():
         else:
             records.append({**pair, "observation": "human_check", "reason": "live_checks disabled"})
     output.write_text(json.dumps({"checked_at": datetime.now(timezone.utc).isoformat(), "pairs": records,
-                                 "omitted_observed_pairs": omitted, "scope": "homepage_and_observed_pairs"}, ensure_ascii=False, indent=2), encoding="utf-8")
+                                 "omitted_observed_pairs": omitted, "scope": "homepage" if scope == "homepage" else "homepage_and_observed_pairs"}, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({"output": str(output.resolve()), "pairs": len(records), "omitted": omitted}))
 
 

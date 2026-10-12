@@ -17,7 +17,7 @@
 
 请求失败使用明确 error_kind：timeout / dns / tls / blocked / rate_limited / loop / budget / unavailable。429 记录来源（网站或 MCP）、状态码、Retry-After 和受影响范围；工具错误不伪造成网站响应。成功返回 200 也需判断是否对应页面/资源。保留路径和 query，不擅自删掉参数。跨域跳转记录后停止，除非该 host 在 scope 中。HTTP 状态为 crawl 证据时记录其时间，不冒充 live 检测。
 
-9.3 默认范围是实际 HTTPS 首页两个版本，以及主 crawl 中已观察 www/non-www pairs；不为所有 HTML 生成四版本。保留路径/query，实际最终路径可以变化。归档两个 URL 的 chain/final response、content_match（true/false/unknown）、简短主体／实体依据和选取来源。目标统一到同一有效 HTTPS 对应页面才 Pass，首选域名可为任一侧；配置明确指定时尊重配置。分别返回相同内容却未统一到一个 URL 是重复未合并 Issue；不同内容未统一是内容／路由不一致。共同错误页、首页兜底、共享 title/header 不能证明 Pass／重复。非网络中断导致的未知响应／对应内容为 Human Check，仍生成最终 Excel。canonical 不代替 redirect；不声称实际 Google 收录或 ranking 蚕食。
+9.3 默认只检查 HTTPS www/non-www 首页，记录 chain、final response、content_match 与主体依据。两个正常首页显示相同主体内容即 Pass，允许两者未统一 URL；不同内容或错误目标为 Issue。错误页、验证码和相同标题不能证明通过。实际取不到页面时为 Human Check，网络中断仍按整次失败规则处理。范围与请求间隔来自 config，默认 homepage／3 秒；不要因存在内页导出就扩大检查。
 
 网络传输中断（含超时、DNS/TLS 连接失败、connection reset／IncompleteRead）覆盖 Human Check 导出规则：立即报错并停止整个 run，不自动 retry／resume，不生成或交付最终 Excel。保存 run-status.json：status=failed、error_kind=network_interrupted、受影响 URL/tool、失败时间、rerun_required=true；另保留 error.log 和 usage.json。要求用户检查连接后在新 run 目录重新运行整个 skill。报表 CLI 检查输入／输出目录的 failed 标记并拒绝生成。普通 HTTP 错误响应和资料缺失仍可写 Human Check。
 
