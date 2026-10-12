@@ -6,7 +6,7 @@
 
 内页只从主 crawl 的 HTML URL 找配对：去掉 leading www. 和 fragment 后，base hostname、port、path 与 exact query 相同，且两侧实际出现。保留已观察 URL 的协议；不为只有一侧的内页生成另一个版本，不全量生成 HTTP/HTTPS 四版本。相同 title/H1 仅作内容线索。不同路径的潜在重复页属于另一个重复内容检查，不能擅自扩大此项。
 
-hostname_page_limit=null 表示首页 + 全部已观察 pairs。正整数限制已观察内页 pairs，首页保留；未选部分写 Coverage。不声称首页通过代表所有内页通过，也不把未出现的 www 地址视为不存在。显式 allowed_hosts 限制仍需遵守；若缺少对应 host 许可则记录 Human Check，不偷偷扩大 scope。
+hostname_page_limit=null 表示首页 + 全部已观察 pairs。正整数限制已观察内页 pairs，首页保留；未选部分写 manifest/handover。不声称首页通过代表所有内页通过，也不把未出现的 www 地址视为不存在。显式 allowed_hosts 限制仍需遵守；若缺少对应 host 许可则记录 Human Check，不偷偷扩大 scope。
 
 主 crawl URL inventory 缺失／截断时，可以先检查首页，但不能把“没有资料”当作“已观察到零内页 pairs”；在最终报告记录 inventory 缺口及 Human Check。如果用户明确指定 preferred_origin，核对跳转是否符合该选择；未指定时依据实际统一目标，不写死方向。
 
@@ -31,7 +31,7 @@ python scripts/check_hostname_pairs.py --config <run>/config.json --pages <run>/
 
 逐跳 GET，不自动跟随不可见的 redirect；保存 URL、状态码、Location、最终地址、Retry-After、主体 hash/有限片段及 checked_at。显式 scope 限制跨 host；单跳请求、redirect 请求都计入 max_live_requests。重复 URL 响应在本次执行内缓存。默认每秒至多 1 个直接请求；无 paid API。正文读取最多 1 MiB，截断内容标 Human Check，不存整站 HTML。循环被记录；达到跳数上限不是已证明循环。
 
-遵守 live_checks=false，不做网络请求但输出各 pair 的 human_check observation。429 后停止新的网络请求并保留 Retry-After；达到非网络内容错误／budget 限制时剩余 pair 写 Human Check，不自动扩容／立即重试。网络／连接失败、超时、DNS/TLS 错误或响应读取中断立即 raise error，停止整个审核；脚本写 run-status.json（failed）及 error.log，保留 usage，不自动重试／续跑、不生成 observations 或最终 Excel，要求用户检查连接后在新 run 目录重新运行整个 skill。403/429 等实际 HTTP 响应不属于这类中断。其他证据缺口允许有遗漏的最终 Excel；Coverage 写完成、未完成和选取范围。
+遵守 live_checks=false，不做网络请求但输出各 pair 的 human_check observation。429 后停止新的网络请求并保留 Retry-After；达到非网络内容错误／budget 限制时剩余 pair 写 Human Check，不自动扩容／立即重试。网络／连接失败、超时、DNS/TLS 错误或响应读取中断立即 raise error，停止整个审核；脚本写 run-status.json（failed）及 error.log，保留 usage，不自动重试／续跑、不生成 observations 或最终 Excel，要求用户检查连接后在新 run 目录重新运行整个 skill。403/429 等实际 HTTP 响应不属于这类中断。其他证据缺口允许有遗漏的最终 Excel；manifest/handover 写完成、未完成和选取范围。
 
 ## 内容与判断
 

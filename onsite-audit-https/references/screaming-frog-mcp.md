@@ -12,6 +12,10 @@
 
 MCP 调用发生 timeout、断连／connection reset 或响应传输中断时，立即停止整个审核，不自动重试，也不改为 Human Check 继续导出。记录 run-status.json（status=failed、error_kind=network_interrupted、tool、时间、rerun_required=true）和错误／usage 日志；要求用户检查网络与 SF server 后，在新 run 目录重新运行整个 skill，不交付本次最终 Excel。工具缺失、schema／参数错误或明确的 HTTP 429 响应沿用各自处理规则，不能误称断网。
 
+## 用户提供导出样本
+
+优先在本地读取全部已提供行，不为证明全站完整而调用 MCP。样本中无 HTTP／Mixed Content 记录（空／NA／NaN）就按该样本判 √；缺少空的问题导出或历史渲染设置不触发 Human Check。实际文件无法读取／解析应报错；实际问题行缺详情或 9.3 内容未确认才补查。此规则不把 MCP 截断／失败响应当作用户提供的零问题样本。
+
 ## 调用顺序
 
 1. 用 MCP client 的 tools/list 或客户端工具目录取得真实 schema，存为本地 tools schema 快照；不需要把整份工具清单塞进聊天。SF UI 也可以导出 Markdown API。记录版本，只查本流程使用的工具。
@@ -81,4 +85,4 @@ sf_url_info({"url": $oneUrl, "file_path": $relativeOutputPath})
 - 三个客户端各自 tools/list 成功。能打开 URL 不等于 MCP handshake 成功。
 - 本仓库不提供未验证的 stdio 启动参数；需要 stdio 时使用官方扩展/本机导出的设置。
 
-9.3 新默认 Python 首页／已观察 pair 检查，SF 仅按需补渲染证据。没有致命网络中断时，缺字段／预算／工具不可用时保留证据并输出最终 Excel，相关项和 Issue 标 Human Check，不等待全站补爬完成才交付。
+9.3 新默认 Python 首页／已观察 pair 检查，SF 仅按需补渲染证据。没有致命网络中断时，缺字段／预算／工具不可用时保留证据并输出最终 Excel，实际未解决项的 Findings 标 Human Check（样本内零 HTTP／Mixed Content 不适用），不等待全站补爬完成才交付。

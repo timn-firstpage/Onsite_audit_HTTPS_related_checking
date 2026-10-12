@@ -1,10 +1,10 @@
 # 内部数据要求与归档
 
-这些是本 skill 的归一化字段，不是声称官方 MCP 原样返回的 schema。读取实际 export header 后建立字段映射；禁止把 missing/null 当作通过。Excel 仍只有 SKILL.md 指定的列。
+这些是本 skill 的归一化字段，不是声称官方 MCP 原样返回的 schema。读取实际 export header 后建立字段映射；用户提供的 SF 样本就是本次范围：9.1/9.2 没有问题记录（含空／NA／NaN）即样本内通过；不要求证明全站完整。读取／解析失败应报错，不能当空样本。Excel 仍只有 SKILL.md 指定的列。
 
 ## 每次 pull 必须保留
 
-保存到 manifest.json：crawl ID、目标域名、抓取时间、抓取状态、渲染模式、版本、工具名与参数、category/filter、源字段映射、文件相对路径、SHA-256、行数、完整性/截断标记、缺失字段、获取时间。版本等无法获取就记录 unknown。必须能判断返回的是全部数据还是预览，不能根据前 5 行出完整报告。
+保存到 manifest.json：crawl ID、目标域名、抓取时间、抓取状态、渲染模式、版本、工具名与参数、category/filter、源字段映射、文件相对路径、SHA-256、行数、完整性/截断标记、缺失字段、获取时间。版本等无法获取就记录 unknown。记录用户选择的样本范围；MCP 预览不能冒充完整导出，但用户明确提供的样本可作为本次完整审核范围。
 
 | 数据集 | 必须有的证据 | 按需补充 |
 | --- | --- | --- |
@@ -45,23 +45,28 @@ run_id 用安全的站点标识与时间/随机后缀生成，不覆盖旧 run�
 ```json
 {
   "overview": [
-    {"check":"9.1","result":"Issue","coverage":"已检查 120 个 crawl URL；live 验证 1 个"},
-    {"check":"9.2","result":"Human Check","coverage":"未提供 mixed content export"},
-    {"check":"9.3","result":"Human Check","coverage":"尚未取得首页及已观察 pairs 的响应／内容证据"}
+    {"check":"9.1","result":"Issue","findings":"发现 HTTP 页面，返回 200。","instructions":"为该页面设置 HTTPS 跳转。"},
+    {"check":"9.2","result":"Pass","findings":"所提供样本中未发现 Mixed Content。","instructions":"无需处理。"},
+    {"check":"9.3","result":"Human Check","findings":"首页返回 403，无法确认跳转后的内容。","instructions":"用浏览器打开首页，确认跳转后的内容。"}
   ],
   "http": [
-    {"address":"http://example.com/a/","issue":"http-200","issue_description":"HTTP 页面返回 200。","suggestion":"已验证对应 HTTPS 页面，请配置永久重定向。"}
+    {"address":"http://example.com/a/","issue":"http-200","issue_description":"HTTP 页面返回 200。","suggestion":"将此页面跳转到已验证的 HTTPS 地址。"}
   ],
   "mixed": [],
-  "hostname": []
+  "hostname": [
+    {"test_url":"https://example.com/","expected_url":"https://www.example.com/","issue":"human-check:403","issue_description":"首页返回 403，内容未能确认。","suggestion":"用浏览器打开首页，确认跳转后的内容。"}
+  ]
 }
 ```
 
-http 行键：address, issue, issue_description, suggestion。
+Overview 必须提供文字 findings 与 instructions，不能写数字计数；旧 coverage 不再必需也不输出，旧输入需根据实际证据补写两句简短文字。范围／数量保留在 manifest/handover。
+
+http 行键：address, issue, issue_description, suggestion；可选 related_url 保留有证据的引用页面或目标 URL。
 mixed 行键：page_address, resource_url, issue, issue_description, suggestion。
 hostname 行键：test_url, expected_url, issue, issue_description, suggestion。
-issue 是内部分类/去重代码；issue_description 是 Excel Issue 列的可读事实描述，suggestion 是独立 Suggestion 列的修复动作。旧 findings.json 缺少 issue_description 时须根据证据补写，将原组合文本拆分；生成器不猜测如何拆句。
-不确定行用 issue 前缀 `human-check:`（兼容旧 `review:`）；在 issue_description 写明尚未验证的部分，suggestion 写具体核验动作。有确定问题且同时有未完成检测时总览写 Issue，Flag 显示 X + Human Check，保留独立 Human Check 行，coverage 包含未完成范围。没有确认问题但证据缺失时写 Human Check，不能为了导出而改成 Pass／Issue。没有致命网络中断时，即使全部缺证据也输出最终 Excel；生成器会为无明细的 Human Check 自动生成基于 Coverage 的人工核查行。实际受影响 URL 未提供时显示 Not supplied，不猜 URL。
+issue 是内部分类/去重代码；issue_description 映射为 Findings，suggestion 映射为 Instructions。每项一句简单的话；Instructions 直接说明人要做的事，无问题写「无需处理」。生成器自动加 Issue Type，并将三类合并到 `9. Implement HTTPS Protocol`。
+
+只有具体未解决的检查才用 issue 前缀 `human-check:`（兼容 `review:`）。有确认问题及此类行时 Overview 写 Issue，显示 X + Human Check。仅有具体未解决行时写 Human Check。无具体行的 Human Check 输入会被拒绝，生成器不再自动添加占位行。9.1/9.2 样本内零记录写 Pass、空数组；不因没有全站覆盖证明而补查。已提供的问题行缺字段仍需说明，不能删行伪造零问题。文件无法读取／解析则报错；网络中断遵循整次失败重跑规则。
 
 overview.check 在内部 JSON 中保留 9.1／9.2／9.3 编号；生成器自动在 Excel Check 列附上固定 item name，不需要 agent 额外填写名称。
 

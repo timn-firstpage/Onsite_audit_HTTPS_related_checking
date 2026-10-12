@@ -10,17 +10,20 @@
 
 Overview 的 **Check** 列必须包含编号和 item name：`9.1 HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content`、`9.2 Mixed Content`、`9.3 WWW vs non-WWW`，不能只显示编号；名称与编号放在同一列。
 
-Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，发现问题显示 **X**；待确认或未检测显示 **Human Check**；已有问题同时有证据缺口显示 **X + Human Check**，不冒充通过。没有致命网络中断时，证据不足仍输出最终 Excel，在 Issue／Suggestion 写清缺口与人工核查动作。发现任何内部 HTTP URL 就 X（即使已转 HTTPS）；Mixed Content 检测完成后零条目 √，有条目 X。空/NaN/NA 若代表缺失资料，不能自动给 √。
+Overview 使用 Check / Flag / Findings / Instructions。通过显示 **√**，发现问题显示 **X**，不使用 Yes/No。仅具体未解决的检查保留 Human Check；用户提供的样本内无 HTTP／Mixed Content 记录即 √。
 
 文件名固定为 **`{site name}_https_audit_{date}.xlsx`**，日期格式 YYYY-MM-DD，例如 `Example_https_audit_2026-10-05.xlsx`。site name 从本次配置/用户提供的名称读取；缺失时使用不带 www 的站点 hostname。日期按用户时区解析或使用指定 audit_date，不由 Mac/Windows 系统日期擅自决定。同日重复运行使用不同 run 目录，不自动加后缀或覆盖旧报告。
 
 | Sheet | Columns |
 | --- | --- |
-| 9.1 HTTPS VS HTTP | Address · Issue · Suggestion |
-| 9.2 HTTPS Mixed Content | Page Address · HTTP Resource URL · Issue · Suggestion |
-| 9.3 WWW VS NON-WWW | Test URL · Expected URL · Issue · Suggestion |
+| Overview | Check · Flag · Findings · Instructions |
+| 9. Implement HTTPS Protocol | Issue Type · Address · Related URL · Findings · Instructions |
 
-只输出确认问题或 Human Check 行，不建空明细 sheet。Overview 保留结果、数量和范围。www/non-www 默认用 Python 检查实际首页两个版本，以及主 crawl 中已经出现的内页配对；不预设 www 为首选，不为全部内页生成四版本。两个独立地址提供相同内容且没有统一重定向时，Issue 列出两个 URL 及证据，Suggestion 写选定首选地址后的合并动作。内容不同则说明域名／路由不一致，不冒称重复。没有致命网络中断时，证据不足照样交付最终文件并标 Human Check，不能声称两个 URL 已排名或排名被蚕食。HTTP／Mixed Content 仍独立基于主 crawl 检查。
+9.1–9.3 合并在一个明细页，Issue Type 分别为 `9.1 HTTPS vs HTTP`、`9.2 Mixed Content`、`9.3 WWW vs non-WWW`。Address 放受影响 URL，Related URL 放引用／目标、HTTP 资源或预期地址。没有问题时保留空明细页的表头。
+
+Findings 写一句实际发现，不再显示行数（旧版的「1」是明细数量）。Instructions 写一句人需要做的下一步，例如「把图片链接改为已验证可用的 HTTPS 地址。」通过时写「无需处理」。不输出 Coverage，范围与计数保留在运行存档。
+
+**样本就是范围：**用户提供多少 SF 导出数据，就检查多少。可读取样本内没有 HTTP／Mixed Content 记录（包括空、NA、NaN）就判 √，写「所提供样本中未发现……」。不因缺全站覆盖、渲染证明或空的问题导出而标 Human Check，也不要求重爬来证明没有问题。文件读取／解析失败直接报错；真实问题行缺详情、9.3 实际内容未能确认，仍按具体证据处理。此结论不扩大为全站保证。
 
 ## 9.1–9.3 逐项检查逻辑
 
@@ -28,11 +31,11 @@ Overview 的列为 Check / Flag / Findings / Coverage：通过显示 **√**，�
 
 | Item | 怎么检查 | 结果判断 |
 | --- | --- | --- |
-| **9.1 HTTP vs HTTPS：是否发现内部 HTTP URL？** | 读取 **Security → HTTP URLs**，有结果时导出 **HTTP URLs Inlinks**，保留 HTTP 地址和引用页面。检查状态码、重定向链、最终 HTTPS 地址及对应内容；提出替换引用或修复跳转建议前，验证 HTTPS 目标是否可用。普通 HTTP 超链接不等于 Mixed Content。 | **√：**完整检测确认零内部 HTTP URL。**X：**发现任何内部 HTTP URL，即使已经正确跳到 HTTPS；正确跳转的地址建议更新引用，其他地址按实际响应说明问题与动作。**Human Check：**导出缺失／截断、范围不明确或所需证据不足；确认已有 HTTP 问题且同时有缺口时显示 **X + Human Check**。 |
-| **9.2 Mixed Content：HTTPS 页面是否引用 HTTP 资源？** | 读取 **Security → Mixed Content** 及对应 bulk export，保留「HTTPS 页面 + HTTP 资源」配对和资源类型。验证资源的 HTTPS 版本是否可用且对应原资源；同一资源只验证一次，但保留所有受影响页面。需要时补充 JavaScript 渲染证据。 | **√：**完整检测确认零 Mixed Content 条目。**X：**存在已确认条目，即使该资源的 HTTPS 版本可用；按验证结果建议更新引用、修复或替换资源。**Human Check：**缺少 page/resource 配对、渲染覆盖或资源验证证据。空／NaN／NA 只有在确认完整导出为零结果时才可判 √，不能把缺资料当通过；已有问题与缺口并存显示 **X + Human Check**。 |
+| **9.1 HTTP vs HTTPS：是否发现内部 HTTP URL？** | 读取 **Security → HTTP URLs**，有结果时导出 **HTTP URLs Inlinks**，保留 HTTP 地址和引用页面。检查状态码、重定向链、最终 HTTPS 地址及对应内容；提出替换引用或修复跳转建议前，验证 HTTPS 目标是否可用。普通 HTTP 超链接不等于 Mixed Content。 | **√：**所提供样本内无内部 HTTP URL。**X：**发现任何内部 HTTP URL，即使已经正确跳到 HTTPS；正确跳转的地址建议更新引用，其他地址按实际响应说明问题与动作。**Human Check：**实际问题行的必要详情无法确认；不因样本未覆盖全站而追加检查。确认已有 HTTP 问题且同时有缺口时显示 **X + Human Check**。 |
+| **9.2 Mixed Content：HTTPS 页面是否引用 HTTP 资源？** | 读取 **Security → Mixed Content** 及对应 bulk export，保留「HTTPS 页面 + HTTP 资源」配对和资源类型。验证资源的 HTTPS 版本是否可用且对应原资源；同一资源只验证一次，但保留所有受影响页面。需要时补充 JavaScript 渲染证据。 | **√：**所提供样本内无 Mixed Content 条目。**X：**存在已确认条目，即使该资源的 HTTPS 版本可用；按验证结果建议更新引用、修复或替换资源。**Human Check：**已有问题行缺少 page/resource 配对或资源验证证据。样本内空／NaN／NA 按无问题处理；已有问题与缺口并存显示 **X + Human Check**。 |
 | **9.3 WWW vs non-WWW：是否统一到对应 HTTPS 页面？** | 当前默认用 Python 检查实际 HTTPS 首页的两个版本，以及主 crawl 中两侧都已出现的内页配对；配对须只相差 leading `www.`，path／query 相同。记录每一跳、最终地址和主体内容，核对页面用途，排除软 404、验证码及错误跳到首页。默认检查全部已观察 pairs，明确配置正整数才限制数量；不预设 www 为首选。 | **√：**已检查范围内，两侧统一到同一可用 HTTPS 页面，内容对应原页面且符合明确指定的首选 origin。**X：**跳错内容／host、内页跳到首页、确认循环，或两个有效地址未统一；相同内容写未合并问题，不同内容写域名／路由不一致。合法路径变化、多跳或临时跳转本身不单独判 X。**Human Check：**403／429、hop／预算上限、主体内容不足或动态内容无法确认；title／H1 相同或返回 200 不能独立证明通过。 |
 
-**Coverage：**按页面和测试 URL 分别记录候选数量、实际完成数量、未检查数量及原因。9.3 当前范围是“首页 + 已观察 pairs”，未配对内页不在此范围内；首页通过不能代表全部内页通过。只查已观察 pairs 与“从全部 HTML 页面生成四版本，再跑 SF List Mode”是不同范围，后者目前尚未实现为默认流程。
+**范围存档：**候选、完成、未检查数量只记入 manifest/handover，不放 Excel。9.3 仍检查首页及已观察 pairs 的实际跳转和内容；9.1/9.2 零样本问题不触发额外人工核验。
 
 **网络中断：**live 检查或 MCP 发生连接失败、超时、DNS/TLS 连接失败、断连或响应读取中断时，立即报错并停止整个审核，保存失败标记、错误日志与用量；要求用户检查连接后在新 run 目录重新运行整个 skill。不自动重试／续跑，不生成或交付本次最终 Excel。已收到的 HTTP 403／429 响应、普通证据缺口及预算上限仍按 Human Check 处理。
 
@@ -135,7 +138,7 @@ export SCREAMING_FROG_MCP_URL
 
 没有适用数据时自动用 shared skill 的 main；可靠记录显示配置已加载且未变则跳过加载。你在 UI 确认网站与 sitemap，手动 Start 并监督，再保存/导出到实际 Downloads 并提供路径。native control 或独立加载失败立即提供手动 Load + sitemap 指引，不反复重试、不停留 pending，也不通过 sf_crawl(config_path) 偷启动。正在进行的 crawl 保留原样，返回下一步 checkpoint。HTTPS 与 robots 同一 SF 会话共享准备记录，不分别覆盖配置或重设 sitemap。
 
-调用返回后仍检查实际数据；sf-handover.json 是交接记录，不是审核通过证明。429 区分网站与 MCP 来源，缺失数据不当作零问题。详见 [完整前提及交接边界](onsite-audit-https/references/sf-shared-config.md)。
+调用返回后仍检查实际数据；sf-handover.json 是交接记录，不是审核通过证明。429 区分网站与 MCP 来源，文件失败不当作零问题；用户样本中没有 HTTP／Mixed Content 记录按样本内零问题。详见 [完整前提及交接边界](onsite-audit-https/references/sf-shared-config.md)。
 
 需要你手动 Load 时，Agent 先将选定 `.seospiderconfig` 保存到 SF 电脑的实际 Downloads 并验证，再给该路径让你加载和检查 sitemap。同名不同内容不覆盖；无法访问该电脑／目录时先给下载或复制步骤并说明未完成保存。该配置文件不是稍后保存的 `.seospider` 爬取结果。
 
@@ -182,7 +185,7 @@ Mac 的报表命令用 `.venv/bin/python` 替代 `.venv/Scripts/python.exe`；�
 
 这些预算是 skill 的执行约束，当前没有独立 MCP proxy 强制扣减；执行 agent 必须记录 usage.json 并在每次调用前检查预算。不能将配置数字当作服务端硬限额。
 
-网络传输中断采用失败即停止：Python live 检查或 MCP 调用出现连接失败、超时、断连或响应读取中断时，不自动重试／续跑，不交付本次最终 Excel。保存 run-status.json（failed）、错误日志和用量，提示用户检查连接后在新 run 目录重新运行整个 skill。HTTP 403/429、资料缺失及预算上限仍沿用 Human Check；此中断规则优先于一般的缺证据导出和 retry 配置。
+网络传输中断采用失败即停止：Python live 检查或 MCP 调用出现连接失败、超时、断连或响应读取中断时，不自动重试／续跑，不交付本次最终 Excel。保存 run-status.json（failed）、错误日志和用量，提示用户检查连接后在新 run 目录重新运行整个 skill。HTTP 403/429、实际检查缺少必要详情及预算上限仍沿用 Human Check；此中断规则优先于一般的缺证据导出和 retry 配置。
 
 ## 验证与当前限制
 

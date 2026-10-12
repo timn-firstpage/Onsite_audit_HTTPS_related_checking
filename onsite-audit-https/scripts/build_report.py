@@ -6,10 +6,13 @@ from datetime import date
 from pathlib import Path
 
 SPECS = {
-    "http": ("9.1", "9.1 HTTPS VS HTTP", ["Address", "Issue", "Suggestion"], ["address", "issue_description", "suggestion"]),
-    "mixed": ("9.2", "9.2 HTTPS Mixed Content", ["Page Address", "HTTP Resource URL", "Issue", "Suggestion"], ["page_address", "resource_url", "issue_description", "suggestion"]),
-    "hostname": ("9.3", "9.3 WWW VS NON-WWW", ["Test URL", "Expected URL", "Issue", "Suggestion"], ["test_url", "expected_url", "issue_description", "suggestion"]),
+    "http": ("9.1", "9.1 HTTPS vs HTTP", ["address", "issue_description", "suggestion"]),
+    "mixed": ("9.2", "9.2 Mixed Content", ["page_address", "resource_url", "issue_description", "suggestion"]),
+    "hostname": ("9.3", "9.3 WWW vs non-WWW", ["test_url", "expected_url", "issue_description", "suggestion"]),
 }
+DETAIL_SHEET = "9. Implement HTTPS Protocol"
+DETAIL_HEADERS = ["Issue Type", "Address", "Related URL", "Findings", "Instructions"]
+OVERVIEW_HEADERS = ["Check", "Flag", "Findings", "Instructions"]
 
 CHECK_NAMES = {
     "9.1": "HTTP vs HTTPS (Insecure Content Detected?) - Screaming Frog Insecure Content",
@@ -37,7 +40,7 @@ def normalize(data):
         raise ValueError("overview must contain one row each for 9.1, 9.2, 9.3")
     by_check = {r["check"]: r for r in overview}
     rows = {}
-    for key, (check, _, _, fields) in SPECS.items():
+    for key, (check, _, fields) in SPECS.items():
         unique = {}
         for row in data.get(key, []):
             required = fields + ["issue"]
@@ -54,8 +57,10 @@ def normalize(data):
             by_check[check] = summary
         if summary.get("result") not in {"Pass", "Issue", "Human Check"}:
             raise ValueError(f"{check}: invalid result")
-        if not isinstance(summary.get("coverage"), str) or not summary["coverage"].strip():
-            raise ValueError(f"{check}: coverage is required")
+        for field in ("findings", "instructions"):
+            value = summary.get(field)
+            if not isinstance(value, str) or not value.strip() or re.fullmatch(r"[\d\s.,+-]+", value):
+                raise ValueError(f"{check}: {field} requires a concise sentence, not a count; update findings.json")
         if rows[key] and summary["result"] == "Pass":
             raise ValueError(f"{check}: findings contradict result")
         if not rows[key] and summary["result"] == "Issue":
@@ -63,14 +68,7 @@ def normalize(data):
         if summary["result"] == "Issue" and all(r["issue"].startswith(("review:", "human-check:")) for r in rows[key]):
             raise ValueError(f"{check}: only review rows, use Human Check")
         if summary["result"] == "Human Check" and not rows[key]:
-            actions = {
-                "http": "Provide the complete Security HTTP URLs/inlinks export and verify affected HTTPS destinations.",
-                "mixed": "Provide complete HTTPS page/HTTP resource pairs and required rendering evidence.",
-                "hostname": "Check the homepage and observed www/non-www pairs; verify redirects and corresponding content.",
-            }
-            row = {f: "Not supplied" for f in fields}
-            row.update(issue="human-check:missing-evidence", issue_description="Human Check: " + summary["coverage"], suggestion=actions[key])
-            rows[key].append(row)
+            raise ValueError(f"{check}: Human Check requires a specific evidence row; do not invent coverage gaps")
         if summary["result"] == "Human Check" and any(not r["issue"].startswith(("review:", "human-check:")) for r in rows[key]):
             raise ValueError(f"{check}: confirmed defects require Issue result")
         for row in rows[key]:
@@ -89,28 +87,32 @@ def build(data, output):
     from openpyxl import Workbook, load_workbook
     from openpyxl.styles import Alignment, Font, PatternFill
 
-    overview, rows = normalize(data)
     output = Path(output)
     reject_failed_run(output.parent)
+    overview, rows = normalize(data)
     if output.exists():
         raise FileExistsError(f"Refusing to overwrite {output}; select a new path")
     output.parent.mkdir(parents=True, exist_ok=True)
     wb = Workbook()
     ws = wb.active
     ws.title = "Overview"
-    ws.append(["Check", "Flag", "Findings", "Coverage"])
+    ws.append(OVERVIEW_HEADERS)
     for key, (check, *_rest) in SPECS.items():
         summary = next(r for r in overview if r["check"] == check)
         has_gaps = any(r["issue"].startswith(("review:", "human-check:")) for r in rows[key])
         flag = {"Pass": "√", "Issue": "X + Human Check" if has_gaps else "X", "Human Check": "Human Check"}[summary["result"]]
-        ws.append([f"{check} {CHECK_NAMES[check]}", flag, len(rows[key]), summary["coverage"]])
-    for key, (_, title, headers, fields) in SPECS.items():
-        if not rows[key]:
-            continue
-        sheet = wb.create_sheet(title)
-        sheet.append(headers)
+        ws.append([f"{check} {CHECK_NAMES[check]}", flag, summary["findings"], summary["instructions"]])
+    sheet = wb.create_sheet(DETAIL_SHEET)
+    sheet.append(DETAIL_HEADERS)
+    detail_values = []
+    for key, (_, issue_type, fields) in SPECS.items():
         for row in rows[key]:
-            sheet.append([row[f] for f in fields])
+            related = row.get("related_url", "") if key == "http" else row[fields[1]]
+            if not isinstance(related, str):
+                raise ValueError(f"{key}: related URL must be a string")
+            values = [issue_type, row[fields[0]], related, row["issue_description"], row["suggestion"]]
+            detail_values.append(values)
+            sheet.append(values)
     for sheet in wb:
         sheet.freeze_panes = "A2"
         sheet.auto_filter.ref = sheet.dimensions
@@ -129,26 +131,27 @@ def build(data, output):
                 cell.alignment = Alignment(vertical="top", wrap_text=True)
         for col in sheet.columns:
             label = col[0].value
-            width = 65 if label in {"Issue", "Suggestion", "Coverage"} else 52
-            if label in {"Flag", "Findings"}:
+            width = 60 if label in {"Findings", "Instructions"} else 48
+            if label == "Issue Type":
+                width = 28
+            if label == "Flag":
                 width = 18
             sheet.column_dimensions[col[0].column_letter].width = width
     wb.save(output)
     verified = load_workbook(output)
-    expected = ["Overview"] + [spec[1] for key, spec in SPECS.items() if rows[key]]
+    expected = ["Overview", DETAIL_SHEET]
     if verified.sheetnames != expected:
         raise RuntimeError("Workbook sheet verification failed")
     if [verified["Overview"].cell(i, 1).value for i in range(2, 5)] != [f"{check} {name}" for check, name in CHECK_NAMES.items()]:
         raise RuntimeError("Workbook check name verification failed")
-    for key, (_, title, headers, fields) in SPECS.items():
-        if not rows[key]:
-            continue
-        sheet = verified[title]
-        if [c.value for c in sheet[1]] != headers or sheet.max_row - 1 != len(rows[key]):
-            raise RuntimeError(f"Workbook header/count verification failed: {title}")
-        for i, source in enumerate(rows[key], 2):
-            if [sheet.cell(i, j).value for j in range(1, len(fields) + 1)] != [source[f] for f in fields]:
-                raise RuntimeError("Workbook value preservation failed")
+    if [c.value for c in verified["Overview"][1]] != OVERVIEW_HEADERS:
+        raise RuntimeError("Overview header verification failed")
+    sheet = verified[DETAIL_SHEET]
+    if [c.value for c in sheet[1]] != DETAIL_HEADERS or sheet.max_row - 1 != len(detail_values):
+        raise RuntimeError("Workbook detail header/count verification failed")
+    for i, source in enumerate(detail_values, 2):
+        if [sheet.cell(i, j).value or "" for j in range(1, 6)] != source:
+            raise RuntimeError("Workbook value preservation failed")
     verified.close()
     return {"output": str(output.resolve()), "findings": {k: len(v) for k, v in rows.items()}}
 

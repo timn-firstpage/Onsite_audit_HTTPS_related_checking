@@ -9,7 +9,7 @@ Supplied `.seospider` files use the common [saved-crawl entry contract](https://
 | Available evidence | HTTPS action |
 | --- | --- |
 | Suitable crawl or exports | Verify site, date, scope, completion and required fields; reuse directly. No profile load or exhaustive historical settings check. |
-| Partly suitable evidence | Keep valid evidence and request only the missing check-specific export/follow-up. A missing export does not by itself require a recrawl. |
+| Partly suitable evidence | Respect the supplied sample scope. Follow up only on concrete unresolved findings/checks, never merely to prove whole-site absence. |
 | User crawl currently running | Preserve it. Return a checkpoint and the files needed after completion; do not load a profile, stop it or indefinitely poll. |
 | No suitable evidence and a permitted follow-up | Invoke the installed shared skill. Default to main for a full crawl; targeted profile only for a specific follow-up. |
 | Shared skill unavailable | Give its installation link or equivalent manual Load → sitemap → Start → save instructions. Do not claim invocation or successful loading. Existing usable files remain usable. |
@@ -24,9 +24,9 @@ Hostname uses Python for the homepage and observed pairs. Only if unresolved con
 
 ## Validate the handover
 
-Keep the shared skill's `sf-handover.json` path in the local run manifest/handover. It records provenance and preparation state; it is not a passing audit or proof of complete data. A saved `.seospider` needs a supported SF load and actual field/export inspection. CSV/NDJSON needs readable structure, required fields and complete row coverage. Do not treat binary signature, file size or a filename as successful crawl verification.
+Keep the shared skill's `sf-handover.json` path in the local run manifest/handover. It records provenance and preparation state; it is not a passing audit or proof of complete data. A saved `.seospider` needs a supported SF load and actual field/export inspection. CSV/NDJSON needs readable structure and the fields needed for its supplied rows. The user-selected sample defines the scope; whole-site completeness is not required. Do not treat binary signature, file size or a filename as successful crawl verification.
 
-Validate 9.1 HTTP URLs/inlinks, 9.2 page/resource pairs and rendering coverage, and 9.3 homepage/observed-pair final response/chain/content evidence independently. Record known limitations only for affected checks. Missing sitemap evidence alone does not invalidate unrelated security checks. Empty exports mean zero findings only when the export and its scope are verified complete.
+Validate 9.1 HTTP URLs/inlinks, 9.2 page/resource pairs and rendering coverage, and 9.3 homepage/observed-pair final response/chain/content evidence independently. Record known limitations only for affected checks. Missing sitemap evidence alone does not invalidate unrelated security checks. For user-supplied samples, no HTTP/mixed-content entries means zero findings in that sample, including empty/NA/NaN issue cells or absent issue-only exports. Do not raise Human Check solely for unknown whole-site/rendering coverage. Unreadable files are input errors; explicit retrieval failures are not empty samples.
 
 Separate website HTTP 429 from MCP/tool 429; retain source, Retry-After and affected coverage. Missing rows and failed requests are not passing responses. Transport interruptions during MCP reads/direct URL checks abort the entire audit with a failed run-status.json and a user-required fresh skill run; never auto-retry or export the failed run. Other safe reads/direct checks follow the HTTPS budget rules; config-load failures follow the shared skill's immediate manual fallback. Sustained crawl errors are handed to the user for UI decisions, without automatic restart. Preserve partial evidence and return a concrete next action.
 
