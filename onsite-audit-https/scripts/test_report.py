@@ -17,8 +17,8 @@ def fixture():
 
 class ReportTests(unittest.TestCase):
     def test_report_naming_and_date_validation(self):
-        self.assertEqual(report_filename("Example", "2026-10-05"), "Example_https_audit_2026-10-05.xlsx")
-        self.assertEqual(report_filename("品牌/香港", "2026-10-05"), "品牌_香港_https_audit_2026-10-05.xlsx")
+        self.assertEqual(report_filename("Example", "2026-10-05"), "9.1-9.3_Example_https_audit_2026-10-05.xlsx")
+        self.assertEqual(report_filename("品牌/香港", "2026-10-05"), "9.1-9.3_品牌_香港_https_audit_2026-10-05.xlsx")
         with self.assertRaises(ValueError):
             report_filename("Example", "2026-02-30")
         with self.assertRaises(ValueError):

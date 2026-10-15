@@ -12,7 +12,7 @@ Checklist 的 **Check** 列必须包含编号和 item name：`9.1 HTTP vs HTTPS 
 
 Checklist 使用 Item No. / Item Name / Initial Check / Findings / Instruction。通过显示 **√**，发现问题显示 **X**，不使用 Yes/No。仅具体未解决的检查保留 Human Check；用户提供的样本内无 HTTP／Mixed Content 记录即 √。
 
-文件名固定为 **`{site name}_https_audit_{date}.xlsx`**，日期格式 YYYY-MM-DD，例如 `Example_https_audit_2026-10-05.xlsx`。site name 从本次配置/用户提供的名称读取；缺失时使用不带 www 的站点 hostname。日期按用户时区解析或使用指定 audit_date，不由 Mac/Windows 系统日期擅自决定。同日重复运行使用不同 run 目录，不自动加后缀或覆盖旧报告。
+文件名固定为 **`9.1-9.3_{site name}_https_audit_{date}.xlsx`**，日期格式 YYYY-MM-DD，例如 `9.1-9.3_Example_https_audit_2026-10-05.xlsx`。site name 从本次配置/用户提供的名称读取；缺失时使用不带 www 的站点 hostname。日期按用户时区解析或使用指定 audit_date，不由 Mac/Windows 系统日期擅自决定。同日重复运行使用不同 run 目录，不自动加后缀或覆盖旧报告。
 
 | Sheet | Columns |
 | --- | --- |
