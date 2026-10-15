@@ -57,7 +57,7 @@ class HostnameTests(unittest.TestCase):
                 with patch.object(opener, 'open', side_effect=error) as request:
                     usage = {}
                     checker = Checker(['example.org'], usage, delay=0, opener=opener)
-                    with self.assertRaisesRegex(NetworkInterrupted, 'rerun the entire skill'):
+                    with self.assertRaisesRegex(NetworkInterrupted, 'first-pass workbook'):
                         checker.check('https://example.org/')
                     self.assertEqual(request.call_count, 1)
                     self.assertEqual(usage['live_requests'], 1)
@@ -81,16 +81,15 @@ class HostnameTests(unittest.TestCase):
             status = json.loads((run / 'run-status.json').read_text(encoding='utf-8'))
             self.assertEqual(status['status'], 'failed')
             self.assertEqual(status['completed_pairs'], 1)
-            self.assertTrue(status['rerun_required'])
+            self.assertFalse(status['rerun_required'])
             self.assertEqual(json.loads((run / 'usage.json').read_text())['live_requests'], 3)
             self.assertTrue((run / 'error.log').is_file())
-            self.assertFalse((run / 'hostname-observations.json').exists())
+            self.assertTrue((run / 'hostname-observations.json').exists())
             data = {'overview': [{'check': c, 'result': 'Pass', 'coverage': 'Completed'} for c in ['9.1', '9.2', '9.3']]}
-            with self.assertRaisesRegex(RuntimeError, 'no final Excel'):
-                build(data, run / 'audit.xlsx')
-            self.assertFalse((run / 'audit.xlsx').exists())
+            build(data, run / 'audit.xlsx')
+            self.assertTrue((run / 'audit.xlsx').exists())
             with patch('sys.argv', ['check_hostname_pairs.py', '--config', str(config), '--pages', str(pages), '--run-dir', str(run)]):
-                with self.assertRaisesRegex(RuntimeError, 'new run directory'):
+                with self.assertRaisesRegex((RuntimeError, FileExistsError), 'new run directory'):
                     main()
 
     def test_only_homepage_generated_and_observed_pairs(self):

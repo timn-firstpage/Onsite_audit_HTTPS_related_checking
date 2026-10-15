@@ -10,7 +10,7 @@
 
 ## 网络中断
 
-MCP 调用发生 timeout、断连／connection reset 或响应传输中断时，立即停止整个审核，不自动重试，也不改为 Human Check 继续导出。记录 run-status.json（status=failed、error_kind=network_interrupted、tool、时间、rerun_required=true）和错误／usage 日志；要求用户检查网络与 SF server 后，在新 run 目录重新运行整个 skill，不交付本次最终 Excel。工具缺失、schema／参数错误或明确的 HTTP 429 响应沿用各自处理规则，不能误称断网。
+**First-pass report on failure / 失败也输出报告：** Always deliver an XLSX from available evidence. Stop failing network requests, preserve completed checks and observations, and mark only affected/unfinished checks Human Check. Summarize errors in Findings using plain report-language wording: “请求超时，未完成检查。” / “网站返回 429，请求被限流。” / “无法连接 Screaming Frog，未完成检查。” Instruction gives one human next step, e.g. “请用浏览器检查首页。” Keep raw errors in error.log, and record affected_checks in run-status.json. A failed marker never blocks report export. No automatic retry loop or mandatory whole-skill rerun. If no data can be read, export all three checks as Human Check, not Pass. This supersedes the former fatal/no-workbook rule. Only an actual inability to write XLSX (missing runtime, disk/permission failure) prevents delivery; report that explicitly and never claim a file exists.
 
 ## 用户提供导出样本
 
@@ -85,4 +85,4 @@ sf_url_info({"url": $oneUrl, "file_path": $relativeOutputPath})
 - 三个客户端各自 tools/list 成功。能打开 URL 不等于 MCP handshake 成功。
 - 本仓库不提供未验证的 stdio 启动参数；需要 stdio 时使用官方扩展/本机导出的设置。
 
-9.3 新默认 Python 两个 HTTPS 首页检查，SF 仅按需补渲染证据。没有致命网络中断时，缺字段／预算／工具不可用时保留证据并输出最终 Excel，实际未解决项的 Findings 标 Human Check（样本内零 HTTP／Mixed Content 不适用），不等待全站补爬完成才交付。
+9.3 新默认 Python 两个 HTTPS 首页检查，SF 仅按需补渲染证据。即使出现网络中断，缺字段／预算／工具不可用时保留证据并输出最终 Excel，实际未解决项的 Findings 标 Human Check（样本内零 HTTP／Mixed Content 不适用），不等待全站补爬完成才交付。

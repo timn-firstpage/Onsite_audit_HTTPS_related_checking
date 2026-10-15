@@ -67,8 +67,6 @@ def normalize(data):
             raise ValueError(f"{check}: Issue requires evidence rows")
         if summary["result"] == "Issue" and all(r["issue"].startswith(("review:", "human-check:")) for r in rows[key]):
             raise ValueError(f"{check}: only review rows, use Human Check")
-        if summary["result"] == "Human Check" and not rows[key]:
-            raise ValueError(f"{check}: Human Check requires a specific evidence row; do not invent coverage gaps")
         if summary["result"] == "Human Check" and any(not r["issue"].startswith(("review:", "human-check:")) for r in rows[key]):
             raise ValueError(f"{check}: confirmed defects require Issue result")
         for row in rows[key]:
@@ -77,10 +75,65 @@ def normalize(data):
     return [by_check[r["check"]] for r in overview], rows
 
 
-def reject_failed_run(directory):
-    status = Path(directory) / "run-status.json"
-    if status.exists() and json.loads(status.read_text(encoding="utf-8-sig")).get("status") == "failed":
-        raise RuntimeError("Audit run failed; no final Excel may be generated. Check the network and rerun the entire skill in a new run directory.")
+def incomplete_data(reason):
+    return {"overview": [{"check": check, "result": "Human Check",
+            "findings": reason, "instructions": "请人工检查此项，或恢复连接后补查。"}
+            for check in CHECK_NAMES], "http": [], "mixed": [], "hostname": []}
+
+
+def prepare_report(data, statuses=()):
+    """Keep valid per-check results; expose invalid or interrupted checks for review."""
+    result = incomplete_data("本项未完成自动检查。")
+    source = data if isinstance(data, dict) else {}
+    summaries = source.get("overview", [])
+    if not isinstance(summaries, list):
+        summaries = []
+    for index, (key, (check, *_)) in enumerate(SPECS.items()):
+        matches = [r for r in summaries if isinstance(r, dict) and r.get("check") == check]
+        candidate = incomplete_data("本项未完成自动检查。")
+        if len(matches) == 1:
+            candidate["overview"][index] = matches[0]
+            candidate[key] = source.get(key, [])
+            try:
+                overview, rows = normalize(candidate)
+                result["overview"][index] = overview[index]
+                result[key] = rows[key]
+            except (ValueError, TypeError, KeyError, AttributeError):
+                result["overview"][index]["findings"] = "本项检查数据不完整，未能确认结果。"
+    for status in statuses:
+        if status.get("status") not in {"failed", "incomplete"}:
+            continue
+        affected = status.get("affected_checks", list(CHECK_NAMES))
+        for index, (key, (check, *_)) in enumerate(SPECS.items()):
+            if check not in affected:
+                continue
+            summary = result["overview"][index]
+            detail = str(status.get("error_kind", "")) + " " + str(status.get("error_detail", ""))
+            detail = detail.lower()
+            reason = ("请求超时，未完成检查。" if "timeout" in detail or "timed out" in detail
+                      else "网站返回 429，请求被限流。" if "429" in detail or "rate_limit" in detail
+                      else "连接失败，未完成检查。")
+            action = "请人工检查此项，或恢复连接后补查。"
+            if summary["result"] == "Issue":
+                fields = SPECS[key][2]
+                row = {f: "未取得" for f in fields}
+                row.update(issue="human-check:interrupted", issue_description=reason, suggestion=action)
+                result[key].append(row)
+                summary["findings"] += " " + reason
+                summary["instructions"] += " " + action
+            else:
+                result["overview"][index] = dict(check=check, result="Human Check", findings=reason, instructions=action)
+    return result
+
+
+def read_status(directory):
+    path = Path(directory) / "run-status.json"
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {"status": "incomplete"}
 
 
 def build(data, output):
@@ -88,7 +141,7 @@ def build(data, output):
     from openpyxl.styles import Alignment, Font, PatternFill
 
     output = Path(output)
-    reject_failed_run(output.parent)
+    data = prepare_report(data, [read_status(output.parent)])
     overview, rows = normalize(data)
     if output.exists():
         raise FileExistsError(f"Refusing to overwrite {output}; select a new path")
@@ -165,6 +218,13 @@ if __name__ == "__main__":
     parser.add_argument("--site-name", required=True)
     parser.add_argument("--date", required=True, help="Audit date YYYY-MM-DD in the user's timezone")
     args = parser.parse_args()
-    reject_failed_run(args.input.parent)
     output = args.output_dir / report_filename(args.site_name, args.date)
-    print(json.dumps(build(json.loads(args.input.read_text(encoding="utf-8-sig")), output), ensure_ascii=False))
+    try:
+        data = json.loads(args.input.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        data = incomplete_data("未能读取检查数据，本项需要人工检查。")
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        (args.output_dir / "report-error.log").write_text(str(exc), encoding="utf-8")
+    if args.input.parent.resolve() != args.output_dir.resolve():
+        data = prepare_report(data, [read_status(args.input.parent)])
+    print(json.dumps(build(data, output), ensure_ascii=False))

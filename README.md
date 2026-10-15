@@ -37,7 +37,7 @@ Findings 写一句实际发现，不再显示行数（旧版的「1」是明细�
 
 **范围存档：**候选、完成、未检查数量只记入 manifest/handover，不放 Excel。9.3 默认只检查两个首页的实际响应和内容；9.1/9.2 零样本问题不触发额外人工核验。
 
-**网络中断：**live 检查或 MCP 发生连接失败、超时、DNS/TLS 连接失败、断连或响应读取中断时，立即报错并停止整个审核，保存失败标记、错误日志与用量；要求用户检查连接后在新 run 目录重新运行整个 skill。不自动重试／续跑，不生成或交付本次最终 Excel。已收到的 HTTP 403／429 响应、普通证据缺口及预算上限仍按 Human Check 处理。
+**First-pass report on failure / 失败也输出报告：** Always deliver an XLSX from available evidence. Stop failing network requests, preserve completed checks and observations, and mark only affected/unfinished checks Human Check. Summarize errors in Findings using plain report-language wording: “请求超时，未完成检查。” / “网站返回 429，请求被限流。” / “无法连接 Screaming Frog，未完成检查。” Instruction gives one human next step, e.g. “请用浏览器检查首页。” Keep raw errors in error.log, and record affected_checks in run-status.json. A failed marker never blocks report export. No automatic retry loop or mandatory whole-skill rerun. If no data can be read, export all three checks as Human Check, not Pass. This supersedes the former fatal/no-workbook rule. Only an actual inability to write XLSX (missing runtime, disk/permission failure) prevents delivery; report that explicitly and never claim a file exists.
 
 ## 文件导航
 
@@ -188,7 +188,7 @@ Mac 的报表命令用 `.venv/bin/python` 替代 `.venv/Scripts/python.exe`；�
 
 这些预算是 skill 的执行约束，当前没有独立 MCP proxy 强制扣减；执行 agent 必须记录 usage.json 并在每次调用前检查预算。不能将配置数字当作服务端硬限额。
 
-网络传输中断采用失败即停止：Python live 检查或 MCP 调用出现连接失败、超时、断连或响应读取中断时，不自动重试／续跑，不交付本次最终 Excel。保存 run-status.json（failed）、错误日志和用量，提示用户检查连接后在新 run 目录重新运行整个 skill。HTTP 403/429、实际检查缺少必要详情及预算上限仍沿用 Human Check；此中断规则优先于一般的缺证据导出和 retry 配置。
+**First-pass report on failure / 失败也输出报告：** Always deliver an XLSX from available evidence. Stop failing network requests, preserve completed checks and observations, and mark only affected/unfinished checks Human Check. Summarize errors in Findings using plain report-language wording: “请求超时，未完成检查。” / “网站返回 429，请求被限流。” / “无法连接 Screaming Frog，未完成检查。” Instruction gives one human next step, e.g. “请用浏览器检查首页。” Keep raw errors in error.log, and record affected_checks in run-status.json. A failed marker never blocks report export. No automatic retry loop or mandatory whole-skill rerun. If no data can be read, export all three checks as Human Check, not Pass. This supersedes the former fatal/no-workbook rule. Only an actual inability to write XLSX (missing runtime, disk/permission failure) prevents delivery; report that explicitly and never claim a file exists.
 
 ## 验证与当前限制
 

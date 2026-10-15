@@ -110,7 +110,7 @@ class ReportTests(unittest.TestCase):
     def test_no_invented_human_check_or_numeric_findings(self):
         data = fixture()
         data['hostname'] = []
-        with self.assertRaises(ValueError): normalize(data)
+        normalize(data)  # A specific summary can describe a failed check without invented URL rows.
         for value in [1, "1", ""]:
             data = fixture()
             data['overview'][0]['findings'] = value
@@ -131,6 +131,43 @@ class ReportTests(unittest.TestCase):
             self.assertEqual(sheet['B3'].value, data['mixed'][0]['page_address'])
             self.assertEqual(sheet['C3'].value, data['mixed'][0]['resource_url'])
             wb.close()
+
+    def test_failed_run_exports_and_preserves_unaffected_checks(self):
+        import json
+        data = fixture()
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            run = Path(directory)
+            (run / 'run-status.json').write_text(json.dumps({'status': 'failed', 'affected_checks': ['9.3'], 'error_detail': 'timed out'}))
+            build(data, run / 'audit.xlsx')
+            wb = load_workbook(run / 'audit.xlsx')
+            self.assertEqual(wb['Checklist']['C2'].value, 'X')
+            self.assertEqual(wb['Checklist']['C3'].value, '√')
+            self.assertEqual(wb['Checklist']['C4'].value, 'Human Check')
+            self.assertIn('请求超时', wb['Checklist']['D4'].value)
+            wb.close()
+
+    def test_invalid_input_still_produces_review_workbook(self):
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            output = Path(directory) / 'audit.xlsx'
+            build({}, output)
+            wb = load_workbook(output)
+            self.assertEqual([wb['Checklist'].cell(i, 3).value for i in range(2, 5)], ['Human Check'] * 3)
+            wb.close()
+
+    def test_cli_missing_input_exports_error_workbook(self):
+        import subprocess
+        import sys
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            run = Path(directory)
+            completed = subprocess.run([sys.executable, '-B', str(Path(__file__).with_name('build_report.py')),
+                '--input', str(run / 'missing.json'), '--output-dir', str(run), '--site-name', 'Example',
+                '--date', '2026-10-15'], capture_output=True, text=True)
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            wb = load_workbook(run / report_filename('Example', '2026-10-15'))
+            self.assertEqual(wb['Checklist']['C2'].value, 'Human Check')
+            self.assertIn('未能读取', wb['Checklist']['D2'].value)
+            wb.close()
+            self.assertTrue((run / 'report-error.log').exists())
 
     def test_review_only_rows_cannot_be_confirmed_issue(self):
         data=fixture()

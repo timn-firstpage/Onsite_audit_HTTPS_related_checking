@@ -18,11 +18,11 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 class NetworkInterrupted(RuntimeError):
-    """Abort the entire audit; the user must start a fresh skill run."""
+    """Stop network requests; keep evidence for the first-pass workbook."""
 
     def __init__(self, url, cause):
         self.url, self.cause = url, cause
-        super().__init__(f"Network request failed at {url}: {cause}. Check the network and rerun the entire skill in a new run directory.")
+        super().__init__(f"Network request failed at {url}: {cause}. Preserve completed results and export the first-pass workbook with Human Check for unfinished checks.")
 
 
 def parts(url):
@@ -260,10 +260,13 @@ def main():
             except NetworkInterrupted as exc:
                 failure = {"status": "failed", "error_kind": "network_interrupted", "url": exc.url,
                            "error_detail": str(exc.cause), "completed_pairs": len(records),
-                           "failed_at": datetime.now(timezone.utc).isoformat(), "rerun_required": True,
+                           "failed_at": datetime.now(timezone.utc).isoformat(), "rerun_required": False, "affected_checks": ["9.3"],
                            "message": str(exc)}
                 status_path.write_text(json.dumps(failure, ensure_ascii=False, indent=2), encoding="utf-8")
                 (args.run_dir / "error.log").write_text(str(exc) + "\n", encoding="utf-8")
+                for remaining in pairs[len(records):]:
+                    records.append({**remaining, "observation": "human_check", "reason": "Network interrupted; check manually or retry later."})
+                output.write_text(json.dumps({"pairs": records, "scope": scope, "incomplete": True}, ensure_ascii=False, indent=2), encoding="utf-8")
                 raise
             observation = compare(left, right)
             left, right = json.loads(json.dumps([left, right]))

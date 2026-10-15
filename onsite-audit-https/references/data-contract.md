@@ -17,9 +17,9 @@
 
 请求失败使用明确 error_kind：timeout / dns / tls / blocked / rate_limited / loop / budget / unavailable。429 记录来源（网站或 MCP）、状态码、Retry-After 和受影响范围；工具错误不伪造成网站响应。成功返回 200 也需判断是否对应页面/资源。保留路径和 query，不擅自删掉参数。跨域跳转记录后停止，除非该 host 在 scope 中。HTTP 状态为 crawl 证据时记录其时间，不冒充 live 检测。
 
-9.3 默认只检查 HTTPS www/non-www 首页，记录 chain、final response、content_match 与主体依据。两个正常首页显示相同主体内容即 Pass，允许两者未统一 URL；不同内容或错误目标为 Issue。错误页、验证码和相同标题不能证明通过。实际取不到页面时为 Human Check，网络中断仍按整次失败规则处理。范围与请求间隔来自 config，默认 homepage／3 秒；不要因存在内页导出就扩大检查。
+9.3 默认只检查 HTTPS www/non-www 首页，记录 chain、final response、content_match 与主体依据。两个正常首页显示相同主体内容即 Pass，允许两者未统一 URL；不同内容或错误目标为 Issue。错误页、验证码和相同标题不能证明通过。实际取不到页面时为 Human Check，网络中断仍输出首轮报告。范围与请求间隔来自 config，默认 homepage／3 秒；不要因存在内页导出就扩大检查。
 
-网络传输中断（含超时、DNS/TLS 连接失败、connection reset／IncompleteRead）覆盖 Human Check 导出规则：立即报错并停止整个 run，不自动 retry／resume，不生成或交付最终 Excel。保存 run-status.json：status=failed、error_kind=network_interrupted、受影响 URL/tool、失败时间、rerun_required=true；另保留 error.log 和 usage.json。要求用户检查连接后在新 run 目录重新运行整个 skill。报表 CLI 检查输入／输出目录的 failed 标记并拒绝生成。普通 HTTP 错误响应和资料缺失仍可写 Human Check。
+**First-pass report on failure / 失败也输出报告：** Always deliver an XLSX from available evidence. Stop failing network requests, preserve completed checks and observations, and mark only affected/unfinished checks Human Check. Summarize errors in Findings using plain report-language wording: “请求超时，未完成检查。” / “网站返回 429，请求被限流。” / “无法连接 Screaming Frog，未完成检查。” Instruction gives one human next step, e.g. “请用浏览器检查首页。” Keep raw errors in error.log, and record affected_checks in run-status.json. A failed marker never blocks report export. No automatic retry loop or mandatory whole-skill rerun. If no data can be read, export all three checks as Human Check, not Pass. This supersedes the former fatal/no-workbook rule. Only an actual inability to write XLSX (missing runtime, disk/permission failure) prevents delivery; report that explicitly and never claim a file exists.
 
 ## 存档
 
@@ -66,7 +66,7 @@ mixed 行键：page_address, resource_url, issue, issue_description, suggestion�
 hostname 行键：test_url, expected_url, issue, issue_description, suggestion。
 issue 是内部分类/去重代码；issue_description 映射为 Findings，suggestion 映射为 Instructions。每项一句简单的话；Instructions 直接说明人要做的事，无问题写「无需处理」。生成器自动加 Issue Type，并将三类合并到 `9. Implement HTTPS Protocol`。
 
-只有具体未解决的检查才用 issue 前缀 `human-check:`（兼容 `review:`）。有确认问题及此类行时 Checklist 写 Issue，显示 X + Human Check。仅有具体未解决行时写 Human Check。无具体行的 Human Check 输入会被拒绝，生成器不再自动添加占位行。9.1/9.2 样本内零记录写 Pass、空数组；不因没有全站覆盖证明而补查。已提供的问题行缺字段仍需说明，不能删行伪造零问题。文件无法读取／解析则报错；网络中断遵循整次失败重跑规则。
+只有具体未解决的检查才用 issue 前缀 `human-check:`（兼容 `review:`）。有确认问题及此类行时 Checklist 写 Issue，显示 X + Human Check。仅有具体未解决行时写 Human Check。无具体 URL 行的 Human Check 可仅在 Checklist 写明报错和人工动作，生成器不再自动添加占位行。9.1/9.2 样本内零记录写 Pass、空数组；不因没有全站覆盖证明而补查。已提供的问题行缺字段仍需说明，不能删行伪造零问题。文件无法读取／解析则报错；网络中断仍输出首轮报告。
 
 overview.check 在内部 JSON 中保留 9.1／9.2／9.3 编号；生成器将编号和固定名称分别写入 Item No. 与 Item Name；结果写入 Initial Check。
 
